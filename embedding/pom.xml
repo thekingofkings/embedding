@@ -14,5 +14,17 @@
       <version>3.8.1</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+	  <groupId>shapefilereader</groupId>
+	  <artifactId>shapefilereader</artifactId>
+	  <version>1.0</version>
+	  <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>jts</groupId>
+      <artifactId>jts</artifactId>
+      <version>1.14</version>
+      <scope>compile</scope>
+    </dependency>
   </dependencies>
 </project>
