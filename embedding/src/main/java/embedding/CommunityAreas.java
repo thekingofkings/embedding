@@ -1,14 +1,16 @@
 package embedding;
 
-import java.io.File;
-import java.io.FileInputStream;
+import com.vividsolutions.jts.geom.Geometry;
+import com.vividsolutions.jts.geom.MultiPolygon;
+import org.geotools.data.shapefile.ShapefileDataStore;
+import org.geotools.data.simple.SimpleFeatureIterator;
+import org.opengis.feature.simple.SimpleFeature;
 
-import org.nocrala.tools.gis.data.esri.shapefile.ShapeFileReader;
-import org.nocrala.tools.gis.data.esri.shapefile.header.ShapeFileHeader;
-import org.nocrala.tools.gis.data.esri.shapefile.shape.AbstractShape;
-import org.nocrala.tools.gis.data.esri.shapefile.shape.ShapeType;
-import org.nocrala.tools.gis.data.esri.shapefile.shape.shapes.PolygonMShape;
-import org.nocrala.tools.gis.data.esri.shapefile.shape.shapes.PolygonShape;
+import java.io.File;
+import java.io.IOException;
+import java.util.AbstractMap;
+import java.util.HashMap;
+
 
 /**
  * Construct the boundary of community areas from shapefile.
@@ -17,39 +19,59 @@ import org.nocrala.tools.gis.data.esri.shapefile.shape.shapes.PolygonShape;
 public class CommunityAreas
 {
     static String dataFolder = "../data";
+
+    /**
+     * There are 10 fields for each SimpleFeature samples in this shapefile.
+     * We will only use the following three:
+     *      1. MultiPolygon (boundary: MultiPolygon)
+     *      2. AREA_NUMBE (id: int)
+     *      3. COMMUNITY (name: string)
+     */
     static String shapeFilePath = "../data/ChiCA_gps/ChiCaGPS.shp";
+
+    public AbstractMap<Integer, CommunityArea> communities;
+
+    public CommunityAreas() {
+        communities = new HashMap<>();
+        try {
+            File f = new File(shapeFilePath);
+            ShapefileDataStore shapefile = new ShapefileDataStore(f.toURI().toURL());
+
+            SimpleFeatureIterator features = shapefile.getFeatureSource().getFeatures().features();
+            SimpleFeature shp;
+            while (features.hasNext()) {
+                shp = features.next();
+                int id = Integer.parseInt((String) shp.getAttribute("AREA_NUMBE"));
+                String name = (String) shp.getAttribute("COMMUNITY");
+                MultiPolygon boundary = (MultiPolygon) shp.getDefaultGeometry();
+                CommunityArea ca = new CommunityArea(id, name, boundary);
+                communities.put(id, ca);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
 
     public static void main( String[] args )
     {
-        FileInputStream shapeFile = null;
-        try {
-            shapeFile = new FileInputStream(shapeFilePath );
-            ShapeFileReader shr = new ShapeFileReader(shapeFile);
+        CommunityAreas CAs = new CommunityAreas();
+    }
+}
 
-            ShapeFileHeader h = shr.getHeader();
-            System.out.println("The shape type of this file is " + h.getShapeType());
 
-            int total = 0;
-            AbstractShape shp;
-            while ((shp = shr.next()) != null) {
-                total ++;
-                ShapeType st = shp.getShapeType();
-                System.out.println(st);
-                switch (st) {
-                    case POLYGON:
-                        PolygonShape p = (PolygonShape) shp;
-                        System.out.format("Polygon with %d parts\n", p.getNumberOfParts());
-                        break;
-                    case POLYGON_M:
-                        PolygonMShape pm = (PolygonMShape) shp;
-                        System.out.format("PolygonM with %d parts\n", pm.getNumberOfParts());
-                }
-            }
-            System.out.format("In total, there are %d shapes.\n", total);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+class CommunityArea {
+    int id;
+    String name;
+    MultiPolygon boundary;
 
-        System.out.println( "Hello World!" );
+    public CommunityArea(int id, String name, MultiPolygon boundary) {
+        this.id = id;
+        this.name = name;
+        this.boundary = boundary;
+    }
+
+    public Geometry getBoundary(){
+        return this.boundary;
     }
 }
