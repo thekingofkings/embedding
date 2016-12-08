@@ -1,7 +1,6 @@
 package embedding;
 
-import com.vividsolutions.jts.geom.MultiPolygon;
-import com.vividsolutions.jts.geom.Point;
+import com.vividsolutions.jts.geom.*;
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
@@ -15,29 +14,11 @@ import java.io.File;
 import java.util.Set;
 
 /**
- * Unit test for simple CommunityAreas.
+ * Unit test for class CommunityAreas.
  */
 public class CommunityAreasTest
     extends TestCase
 {
-    /**
-     * Create the test case
-     *
-     * @param testName name of the test case
-     */
-    public CommunityAreasTest(String testName )
-    {
-        super( testName );
-    }
-
-    /**
-     * @return the suite of tests being tested
-     */
-    public static Test suite()
-    {
-        return new TestSuite( CommunityAreasTest.class );
-    }
-
     /**
      * Rigourous Test :-)
      */
@@ -74,7 +55,7 @@ public class CommunityAreasTest
         }
     }
 
-    public void testCommunityAreas() {
+    public void testBuildingCommunityAreas() {
         CommunityAreas CAs = new CommunityAreas();
         Set<Integer> keys = CAs.communities.keySet();
 
@@ -84,5 +65,19 @@ public class CommunityAreasTest
             assertTrue(centroid.getX() != 0);
             assertTrue(centroid.getY() != 0);
         }
+    }
+
+    public void testGeometryOperation() {
+        GeometryFactory gf = new GeometryFactory();
+        Coordinate[] polyCoords = {
+                new Coordinate(0, 0),
+                new Coordinate(0, 10),
+                new Coordinate(12, 0),
+                new Coordinate(0,0)
+        };
+        Polygon poly = gf.createPolygon(polyCoords);
+        Point p = gf.createPoint(new Coordinate(1, 3));
+        assertTrue(poly.contains(p));
+        assertTrue(p.within(poly));
     }
 }

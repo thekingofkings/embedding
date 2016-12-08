@@ -27,7 +27,7 @@ public class CommunityAreas
      *      2. AREA_NUMBE (id: int)
      *      3. COMMUNITY (name: string)
      */
-    static String shapeFilePath = "../data/ChiCA_gps/ChiCaGPS.shp";
+    public static final String shapeFilePath = "../data/ChiCA_gps/ChiCaGPS.shp";
 
     public AbstractMap<Integer, CommunityArea> communities;
 
