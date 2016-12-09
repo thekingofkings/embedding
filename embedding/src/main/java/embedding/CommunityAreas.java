@@ -7,10 +7,7 @@ import org.geotools.data.simple.SimpleFeatureIterator;
 import org.opengis.feature.simple.SimpleFeature;
 
 import java.io.*;
-import java.util.AbstractMap;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 
@@ -49,6 +46,8 @@ public class CommunityAreas
                 CommunityArea ca = new CommunityArea(id, name, boundary);
                 communities.put(id, ca);
             }
+            features.close();
+            shapefile.dispose();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -82,13 +81,14 @@ public class CommunityAreas
 
     private void saveTaxiFlowMatrix() {
         try {
-            BufferedWriter fout = new BufferedWriter(new FileWriter("taixFlow.csv"));
+            BufferedWriter fout = new BufferedWriter(new FileWriter("taxiFlow.csv"));
             for (int i = 1; i <= communities.size(); i++) {
                 List<Integer> flows = communities.get(i).taxiFlows;
                 List<String> flowStr = flows.stream().map(x -> x.toString()).collect(Collectors.toList());
                 String line = flowStr.stream().collect(Collectors.joining(","));
                 fout.write(line + "\n");
             }
+            fout.close();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -113,7 +113,7 @@ class CommunityArea {
         this.id = id;
         this.name = name;
         this.boundary = boundary;
-        this.taxiFlows = new ArrayList<>(77);
+        this.taxiFlows = new ArrayList<>(Collections.nCopies(77, 0));
     }
 
     public Geometry getBoundary(){
