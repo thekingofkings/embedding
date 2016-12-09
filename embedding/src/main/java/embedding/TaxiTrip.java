@@ -5,6 +5,8 @@ import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.Point;
 
 import java.io.*;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * Parse taxi trip files.
@@ -16,6 +18,7 @@ import java.io.*;
 public class TaxiTrip {
     public enum TAXITYPE { Type1, Type2 };
 
+    public static int badTrip = 0;
     public static TAXITYPE tripFormat;
     public static final String tripFilePath = "../data/ChicagoTaxi";
     public static GeometryFactory pointsBuilder = new GeometryFactory();
@@ -34,9 +37,13 @@ public class TaxiTrip {
      * Parse taxi trips from one input line.
      * @param line
      */
-    public TaxiTrip(String line) {
+    public TaxiTrip(String line) throws Exception {
         if (tripFormat ==  TAXITYPE.Type1) {
             String[] ls = line.split("\t+");
+            if (ls.length != 13) {
+                badTrip ++;
+                throw new Exception("Taxi trip has missing information!");
+            }
             this.startDate = new ShortDate(ls[7]);
             this.endDate = new ShortDate(ls[8]);
             this.startLoc = parseGPS(ls[9]);
@@ -62,8 +69,11 @@ public class TaxiTrip {
     }
 
 
-    public static void parseTaxiFiles() {
+    public static List<TaxiTrip> parseTaxiFiles() {
+        long t1 = System.currentTimeMillis();
+
         File taxiDir = new File(tripFilePath);
+        List<TaxiTrip> trips = new LinkedList<>();
         String[] filesType1 = taxiDir.list(new FilenameFilter() {
             @Override
             public boolean accept(File file, String s) {
@@ -75,16 +85,23 @@ public class TaxiTrip {
             for (String fn : filesType1) {
                 BufferedReader fin = new BufferedReader(new FileReader(tripFilePath + File.separator + fn));
                 String l = fin.readLine();  // header
-                System.out.println(l);
-                System.out.println(fin.readLine());
                 while ((l = fin.readLine()) != null) {
-                    TaxiTrip t = new TaxiTrip(l);
-                    break;
+                    TaxiTrip t;
+                    try {
+                        t = new TaxiTrip(l);
+                    } catch (Exception e) {
+                        continue;
+                    }
+                    trips.add(t);
                 }
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
+        long t2 = System.currentTimeMillis();
+        System.out.format("Parse all taxi files finished in %d milliseconds.\n", (t2-t1));
+        System.out.format("#totalTrip: %d\n#badTrip: %d\n", trips.size(), badTrip);
+        return trips;
     }
 
     public static void main(String[] args) {

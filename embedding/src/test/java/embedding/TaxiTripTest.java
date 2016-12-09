@@ -54,13 +54,18 @@ public class TaxiTripTest extends TestCase {
     }
 
     public void testTaxiTrip() {
+        TaxiTrip.tripFormat = TaxiTrip.TAXITYPE.Type1;
         String s = "7/27/13 20:00\tCredit Card\t19\t3.25\t0\t0\t0\t7/27/13 15:00\t7/27/13 15:00\t\"41.887,-87.6957\"\t\"41.887,-87.6957\"\t7/27/13 20:00\t7/27/13 20:00";
-        TaxiTrip t = new TaxiTrip(s);
-        assertEquals(t.duration, 19);
-        assertEquals(t.endLoc.getX(), 41.887);
-        assertEquals(t.startLoc.getY(), -87.6957);
-        assertEquals(t.startDate.hour, 15);
-        assertEquals(t.endDate.day, 27);
+        try {
+            TaxiTrip t = new TaxiTrip(s);
+            assertEquals(t.duration, 19);
+            assertEquals(t.endLoc.getX(), 41.887);
+            assertEquals(t.startLoc.getY(), -87.6957);
+            assertEquals(t.startDate.hour, 15);
+            assertEquals(t.endDate.day, 27);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
 }
