@@ -94,11 +94,29 @@ public class CommunityAreas
         }
     }
 
+    /**
+     * Generate edge graph for LINE embedding learning
+     */
+    public void generateLINEtaxiOD() {
+        try {
+            BufferedWriter fout = new BufferedWriter(new FileWriter("taxiOD.csv"));
+            for (int i = 1; i <= communities.size(); i++) {
+                for (int j = 0; j < 77; j++) {
+                    fout.write(String.format("%d %d %d\n", i, j+1, communities.get(i).taxiFlows.get(j)));
+                }
+            }
+            fout.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
 
     public static void main( String[] args )
     {
         CommunityAreas CAs = new CommunityAreas();
         CAs.mapTripsIntoCommunities();
+        CAs.generateLINEtaxiOD();
     }
 }
 
