@@ -2,6 +2,7 @@ from sklearn import tree, svm
 from sklearn.model_selection import cross_val_score
 import pickle
 import numpy as np
+import nimfa
 
 
 def LINEfeatures():
@@ -15,19 +16,32 @@ def LINEfeatures():
             F[idx] = f[1:]
     return np.array(F)
     
+
+def NMFfeatures():
+    f = np.loadtxt("../miscs/taxiFlow.csv", delimiter=",")
+    nmf = nimfa.Nmf(f, rank=4, max_iter=30, update="divergence", objective="conn", conn_change=50)
+    nmf_fit = nmf()
+    src = nmf_fit.basis()
+    dst = nmf_fit.coef()
+    return np.concatenate( (src, dst.T), axis=1 )
     
-def classification_LINE_features():
+    
+    
+def evaluation_with_classification():
     l = pickle.load(open("../miscs/crime-label"))
     F = LINEfeatures()
+    M = NMFfeatures()
     
     print "Crime"
     clf1 = tree.DecisionTreeClassifier()
     scores1 = cross_val_score(clf1, F, l, cv=10)
-    print "DT", scores1.mean(), scores1.std()
+    nmfs1 = cross_val_score(clf1, M, l, cv=10)
+    print "DT", scores1.mean(), scores1.std(), nmfs1.mean(), nmfs1.std()
     
     clf2 = svm.SVC()
     scores2 = cross_val_score(clf2, F, l, cv=10)
-    print "SVM", scores2.mean(), scores2.std()
+    nmfs2 = cross_val_score(clf2, M, l, cv=10)
+    print "SVM", scores2.mean(), scores2.std(), nmfs2.mean(), nmfs2.std()
     
     l1 = pickle.load(open("../miscs/poi-label"))
     l2 = pickle.load(open("../miscs/demo-label"))
@@ -38,16 +52,13 @@ def classification_LINE_features():
             print "Only one class"
         else:
             scores1 = cross_val_score(clf1, F, l[k], cv=10)
-            print "DT", scores1.mean(), scores1.std()
+            nmfs1 = cross_val_score(clf1, M, l[k], cv=10)
+            print "DT", scores1.mean(), scores1.std(), nmfs1.mean(), nmfs1.std()
             scores2 = cross_val_score(clf2, F, l[k], cv=10)
-            print "SVM", scores2.mean(), scores2.std()
-    return l
+            nmfs2 = cross_val_score(clf2, M, l[k], cv=10)
+            print "SVM", scores2.mean(), scores2.std(), nmfs2.mean(), nmfs2.std()
+    return l, F, M
     
 
 if __name__ == "__main__":
-    l = classification_LINE_features()
-    
-    f = np.loadtxt("../miscs/taxiFlow.csv", delimiter=",")
-    import nimfa
-    nmf = nimfa.Nmf(f, rank=10, max_iter=30, update="divergence", objective="conn", conn_change=50)
-    nmf_fit = nmf()
+    l = evaluation_with_classification()
