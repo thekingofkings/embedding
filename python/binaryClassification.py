@@ -28,24 +28,19 @@ def NMFfeatures():
     
     
 def evaluation_with_classification():
-    l = pickle.load(open("../miscs/crime-label"))
     F = LINEfeatures()
     M = NMFfeatures()
     
-    print "Crime"
     clf1 = tree.DecisionTreeClassifier()
-    scores1 = cross_val_score(clf1, F, l, cv=10)
-    nmfs1 = cross_val_score(clf1, M, l, cv=10)
-    print "DT", scores1.mean(), scores1.std(), nmfs1.mean(), nmfs1.std()
-    
     clf2 = svm.SVC()
-    scores2 = cross_val_score(clf2, F, l, cv=10)
-    nmfs2 = cross_val_score(clf2, M, l, cv=10)
-    print "SVM", scores2.mean(), scores2.std(), nmfs2.mean(), nmfs2.std()
     
     l1 = pickle.load(open("../miscs/poi-label"))
     l2 = pickle.load(open("../miscs/demo-label"))
+    c = pickle.load(open("../miscs/crime-label"))
+    lehd = pickle.load(open("../miscs/lehd-label"))
     l = dict(l1, **l2)
+    l["Crime"] = c
+    l["LEHD"] = lehd
     for k in l:
         print k
         if sum(l[k]) == 77:
