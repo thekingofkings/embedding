@@ -56,7 +56,7 @@ public class CommunityAreas
 
     public void mapTripsIntoCommunities() {
         long t1 = System.currentTimeMillis();
-        System.out.println("Start map trips into communities.");
+        System.out.println("Start mapping trips into communities.");
 
         List<TaxiTrip> trips = TaxiTrip.parseTaxiFiles();
         for (TaxiTrip t : trips) {
@@ -127,11 +127,15 @@ class CommunityArea {
     MultiPolygon boundary;
     List<Integer> taxiFlows;
 
-    public CommunityArea(int id, String name, MultiPolygon boundary) {
+    public CommunityArea(int id, String name, MultiPolygon boundary, int count) {
         this.id = id;
         this.name = name;
         this.boundary = boundary;
-        this.taxiFlows = new ArrayList<>(Collections.nCopies(77, 0));
+        this.taxiFlows = new ArrayList<>(Collections.nCopies(count, 0));
+    }
+
+    public CommunityArea(int id, String name, MultiPolygon boundary) {
+        this(id, name, boundary, 77);
     }
 
     public Geometry getBoundary(){
