@@ -7,10 +7,10 @@ import org.geotools.data.shapefile.ShapefileDataStore;
 import org.geotools.data.simple.SimpleFeatureIterator;
 import org.opengis.feature.simple.SimpleFeature;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InterruptedIOException;
+import java.io.*;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Construct the boundary of tracts from shapefile.
@@ -48,13 +48,21 @@ public class Tracts {
     }
 
     public void mapTripsIntoTracts() {
+        mapTripsIntoTracts(tracts.keySet());
+    }
+
+    public void mapTripsIntoTracts(Set<Integer> focusKeys) {
         long t1 = System.currentTimeMillis();
         System.out.println("Start mapping trips into tracts...");
+        Map<Integer, Tract> focusGroup = new HashMap<>();
+        for (int k : focusKeys)
+            focusGroup.put(k, tracts.get(k));
+
 
         List<TaxiTrip> trips = TaxiTrip.parseTaxiFiles();
         for (TaxiTrip tt : trips) {
             Tract s = null, e = null;
-            for (Tract t : tracts.values()) {
+            for (Tract t : focusGroup.values()) {
                 if (t.boundary.contains(tt.startLoc))
                     s = t;
                 if (t.boundary.contains(tt.endLoc))
@@ -76,10 +84,52 @@ public class Tracts {
         System.out.format("Map trips into tracts finished in %s seconds.\n", (t2-t1)/1000);
     }
 
+    public void visualizeCasesAsDotFile() {
+        Set<Integer> residence = new HashSet<>(Arrays.asList(new Integer[]{330100, 32100, 63302, 80100, 60800}));
+        Set<Integer> nightlife = new HashSet<>(Arrays.asList(new Integer[]{81700, 62200, 832000, 243400}));
+        Set<Integer> professional = new HashSet<>(Arrays.asList(new Integer[]{839100, 320100, 81800, 760801, 81401}));
+        List<Integer> alltracts = Stream.of(residence, nightlife, professional).flatMap(x -> x.stream()).collect(Collectors.toList());
+
+        for (int hour = 0; hour < 24; hour++) {
+            try {
+                BufferedWriter fout = new BufferedWriter(new FileWriter(String.format("../miscs/case-%d.dot", hour)));
+                fout.write("digraph { \n");
+                // plot each node
+                for (int r : residence) {
+                    fout.write(String.format("%d [color=blue];\n", r));
+                }
+                for (int nl : nightlife) {
+                    fout.write(String.format("%d [color=red];\n", nl));
+                }
+                for (int pf : professional) {
+                    fout.write(String.format("%d [color=green];\n", pf));
+                }
+                // plot each edge with weight
+                for (int src : alltracts) {
+                    Map<Integer, Integer> flowMap = tracts.get(src).taxiFlows.get(hour);  // the flow map of hour
+                    for (int dst : alltracts) {
+                        if (flowMap.containsKey(dst)) {
+                            int w = flowMap.get(dst);
+                            if (w > 10)
+                                fout.write(String.format("%d -> %d [label=\"%d\"];\n", src, dst, w));
+                        }
+                    }
+                }
+                fout.write("}\n");
+                fout.close();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+        }
+    }
+
 
     public static void main(String[] argv) {
         Tracts tracts = new Tracts();
-        tracts.mapTripsIntoTracts();
+        Set<Integer> focusTracts = new HashSet<>(Arrays.asList(new Integer[]{330100, 32100, 63302, 80100, 60800, 81700, 62200, 832000, 243400, 839100, 320100, 81800, 760801, 81401}));
+        tracts.mapTripsIntoTracts(focusTracts);
+        tracts.visualizeCasesAsDotFile();
     }
 }
 
