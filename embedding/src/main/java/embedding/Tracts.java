@@ -85,9 +85,9 @@ public class Tracts {
     }
 
     public void visualizeCasesAsDotFile() {
-        Set<Integer> residence = new HashSet<>(Arrays.asList(new Integer[]{330100, 32100, 63302, 80100, 60800}));
-        Set<Integer> nightlife = new HashSet<>(Arrays.asList(new Integer[]{81700, 62200, 832000, 243400}));
-        Set<Integer> professional = new HashSet<>(Arrays.asList(new Integer[]{839100, 320100, 81800, 760801, 81401}));
+        Set<Integer> residence = new HashSet<>(Arrays.asList(new Integer[]{80100, 63302})); // 32100, 330100, 60800,
+        Set<Integer> nightlife = new HashSet<>(Arrays.asList(new Integer[]{832000, 81700})); // , 62200, 243400
+        Set<Integer> professional = new HashSet<>(Arrays.asList(new Integer[]{760801, 81401})); // , 320100, 839100, 81800
         List<Integer> alltracts = Stream.of(residence, nightlife, professional).flatMap(x -> x.stream()).collect(Collectors.toList());
 
         for (int hour = 0; hour < 24; hour++) {
@@ -110,7 +110,7 @@ public class Tracts {
                     for (int dst : alltracts) {
                         if (flowMap.containsKey(dst)) {
                             int w = flowMap.get(dst);
-                            if (w > 10)
+                            if (w > 4)
                                 fout.write(String.format("%d -> %d [label=\"%d\"];\n", src, dst, w));
                         }
                     }
@@ -124,12 +124,34 @@ public class Tracts {
         }
     }
 
+    public void timeSeries_traffic(Set<Integer> focusKeys) {
+        for (int k : focusKeys) {
+            List<Integer> out = new ArrayList<>();
+            List<Integer> in = new ArrayList<>();
+            for (int h = 0; h < 24; h++) {
+                int trafficOut = tracts.get(k).taxiFlows.get(h).values().stream().mapToInt(x->x.intValue()).sum();
+                int trafficIn = 0;
+                for (int src : focusKeys) {
+                    Map<Integer, Integer> flowMap = tracts.get(src).taxiFlows.get(h);
+                    if (flowMap.containsKey(k))
+                        trafficIn += flowMap.get(k);
+                }
+                out.add(trafficOut);
+                in.add(trafficIn);
+            }
+            System.out.println(k);
+            System.out.println(in);
+            System.out.println(out);
+        }
+    }
+
 
     public static void main(String[] argv) {
         Tracts tracts = new Tracts();
         Set<Integer> focusTracts = new HashSet<>(Arrays.asList(new Integer[]{330100, 32100, 63302, 80100, 60800, 81700, 62200, 832000, 243400, 839100, 320100, 81800, 760801, 81401}));
         tracts.mapTripsIntoTracts(focusTracts);
         tracts.visualizeCasesAsDotFile();
+        tracts.timeSeries_traffic(focusTracts);
     }
 }
 
