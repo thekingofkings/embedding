@@ -49,6 +49,9 @@ public class CommunityAreasTest
                 MultiPolygon g = (MultiPolygon) shp.getDefaultGeometry();
             }
 
+            fr.close();
+            r.dispose();
+
             assertEquals(total, 77);
         } catch (Exception e) {
             e.printStackTrace();

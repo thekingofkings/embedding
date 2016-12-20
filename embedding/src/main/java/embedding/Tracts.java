@@ -124,34 +124,57 @@ public class Tracts {
         }
     }
 
+    public void timeSeries_traffic() {
+        timeSeries_traffic(tracts.keySet());
+    }
+
     public void timeSeries_traffic(Set<Integer> focusKeys) {
-        for (int k : focusKeys) {
-            List<Integer> out = new ArrayList<>();
-            List<Integer> in = new ArrayList<>();
-            for (int h = 0; h < 24; h++) {
-                int trafficOut = tracts.get(k).taxiFlows.get(h).values().stream().mapToInt(x->x.intValue()).sum();
-                int trafficIn = 0;
-                for (int src : focusKeys) {
-                    Map<Integer, Integer> flowMap = tracts.get(src).taxiFlows.get(h);
-                    if (flowMap.containsKey(k))
-                        trafficIn += flowMap.get(k);
+        try {
+            BufferedWriter fout = new BufferedWriter(new FileWriter("../miscs/taxi-flow-time-series.txt"));
+
+            for (int k : focusKeys) {
+                List<Integer> out = new ArrayList<>();
+                List<Integer> in = new ArrayList<>();
+                for (int h = 0; h < 24; h++) {
+                    int trafficOut = tracts.get(k).taxiFlows.get(h).values().stream().mapToInt(x->x.intValue()).sum();
+                    int trafficIn = 0;
+                    for (int src : focusKeys) {
+                        Map<Integer, Integer> flowMap = tracts.get(src).taxiFlows.get(h);
+                        if (flowMap.containsKey(k))
+                            trafficIn += flowMap.get(k);
+                    }
+                    out.add(trafficOut);
+                    in.add(trafficIn);
                 }
-                out.add(trafficOut);
-                in.add(trafficIn);
+                fout.write(Integer.toString(k));
+                for (int fi : in) {
+                    fout.write(String.format(",%d", fi));
+                }
+                fout.write(String.format("\n%d", -k));
+                for (int fo : out) {
+                    fout.write(String.format(",%d", fo));
+                }
+                fout.write("\n");
             }
-            System.out.println(k);
-            System.out.println(in);
-            System.out.println(out);
+            fout.close();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
 
-    public static void main(String[] argv) {
+    public static void case_by_poi() {
         Tracts tracts = new Tracts();
         Set<Integer> focusTracts = new HashSet<>(Arrays.asList(new Integer[]{330100, 32100, 63302, 80100, 60800, 81700, 62200, 832000, 243400, 839100, 320100, 81800, 760801, 81401}));
         tracts.mapTripsIntoTracts(focusTracts);
         tracts.visualizeCasesAsDotFile();
         tracts.timeSeries_traffic(focusTracts);
+    }
+
+    public static void main(String[] argv) {
+        Tracts tracts = new Tracts();
+        tracts.mapTripsIntoTracts();
+        tracts.timeSeries_traffic();
     }
 }
 
