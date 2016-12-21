@@ -16,7 +16,7 @@ public class TaxiTripTest extends TestCase {
         String[] filesType1 = taxiDir.list(new FilenameFilter() {
             @Override
             public boolean accept(File file, String s) {
-                return s.startsWith("201");
+                return s.matches("201[34]-.*");
             }
         });
         assertEquals(filesType1.length, 6);

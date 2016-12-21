@@ -5,8 +5,7 @@ import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.Point;
 
 import java.io.*;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 /**
  * Parse taxi trip files.
@@ -16,7 +15,7 @@ import java.util.List;
  *      Type 2: Chicago Verifone xxxx
  */
 public class TaxiTrip {
-    public enum TAXITYPE { Type1, Type2 };
+    public enum TAXITYPE { Type1, Type2, Type3 };
 
     public static int badTrip = 0;
     public static TAXITYPE tripFormat;
@@ -60,6 +59,8 @@ public class TaxiTrip {
             this.startLoc = parseGPSType2(ls[9], ls[10]);
             this.endLoc = parseGPSType2(ls[11], ls[12]);
             this.duration = Integer.parseInt(ls[15]);
+        } else if (tripFormat == TAXITYPE.Type3) {
+            String[] ls = line.split(",");
         } else {
             System.err.println("Wrong trip format is given.");
         }
@@ -146,8 +147,39 @@ public class TaxiTrip {
         return trips;
     }
 
+    public static void splitType3TaxiFile() {
+        long t1 = System.currentTimeMillis();
+        System.out.println("Split type 3 taxi file by months...");
+        try {
+            Map<String, BufferedWriter> fouts = new HashMap<>();
+            BufferedReader fin = new BufferedReader(new FileReader("../data/chicago-taxi.csv"));
+            fin.readLine();
+            String l;
+            while ((l = fin.readLine()) != null) {
+                String[] ls = l.split(",");
+                String nl = String.join(",", Arrays.copyOfRange(ls, 2, ls.length));
+                String[] startDate = ls[2].split("[/ :]");
+                String monthKey = startDate[2] + startDate[0];  // month as yyyyMM
+                if (fouts.containsKey(monthKey)) {
+                    fouts.get(monthKey).write(nl + "\n");
+                } else {
+                    System.out.format("create file for %s\n", monthKey);
+                    fouts.put(monthKey, new BufferedWriter(new FileWriter(String.format("../data/ChicagoTaxi/%s.csv", monthKey))));
+                    fouts.get(monthKey).write(nl + "\n");
+                }
+            }
+            for (BufferedWriter fo : fouts.values())
+                fo.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        long t2 = System.currentTimeMillis();
+        System.out.format("Split finished in %d seconds.\n", (t2-t1)/1000);
+    }
+
     public static void main(String[] args) {
-        parseTaxiFiles();
+//        parseTaxiFiles();
+        splitType3TaxiFile();
     }
 }
 
@@ -179,8 +211,9 @@ class ShortDate {
 
     /**
      * Parse the date in Type2 taxi "STARTDATE and STATETIME"
-     * @param s datetime string, e.g. "6/10/2013 0:00	12:07:00 AM", or "5/6/2013	12:00:00 AM", without quotations.
-     */
+     * @param date datetime string, e.g. "6/10/2013 0:00" or "5/6/2013", without quotations.
+     * @param time time sting, e.g. "12:00:00 AM", without quotations.
+     * */
     public ShortDate(String date, String time) {
         String[] dates = date.split("/");
         this.month = Byte.parseByte(dates[0]);
