@@ -28,6 +28,9 @@ public class TaxiTripTest extends TestCase {
             }
         });
         assertEquals(filesType2.length, 2);
+
+        String[] filesType3 = taxiDir.list((file, s) -> s.matches("201[34]\\d+\\.csv"));
+        assertTrue(filesType3.length >= 1);
     }
 
     public void testShortDate() {
@@ -93,6 +96,24 @@ public class TaxiTripTest extends TestCase {
 
             TaxiTrip t2 = new TaxiTrip(s2);
             assertEquals(t2.startDate.hour, 19);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void testTaxiTripT3() {
+        TaxiTrip.tripFormat = TaxiTrip.TAXITYPE.Type3;
+        String s1 = "01/21/2013 12:00:00 AM,01/21/2013 12:00:00 PM,240,0.4,17031070400,17031070300,7,7,$4.84,$0.00,$0.00,$0.00,$4.84,Cash,,41.928967266,-87.656156831,POINT (-87.656157 41.928967),41.929046937,-87.651310877,POINT (-87.651311 41.929047)";
+        try {
+            TaxiTrip t = new TaxiTrip(s1);
+            assertEquals(t.startDate.minute, 0);
+            assertEquals(t.startDate.hour, 0);
+            assertEquals(t.duration, 240);
+            assertEquals(t.endDate.hour, 12);
+            assertEquals(t.endDate.month, 1);
+            assertEquals(t.endDate.day, 21);
+            assertEquals(t.endLoc.getX(), -87.651310877);
+            assertEquals(t.startLoc.getY(), 41.928967266);
         } catch (Exception e) {
             e.printStackTrace();
         }

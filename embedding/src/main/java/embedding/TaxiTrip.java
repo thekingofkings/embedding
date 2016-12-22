@@ -61,6 +61,17 @@ public class TaxiTrip {
             this.duration = Integer.parseInt(ls[15]);
         } else if (tripFormat == TAXITYPE.Type3) {
             String[] ls = line.split(",");
+            if (ls.length != 21) {
+                badTrip ++;
+                throw new Exception("Taxi trip T3 has missing information!");
+            }
+            String[] startDates = ls[0].split(" ", 2);
+            this.startDate = new ShortDate(startDates[0], startDates[1]);
+            String[] endDates = ls[1].split(" ", 2);
+            this.endDate = new ShortDate(endDates[0], endDates[1]);
+            this.startLoc = parseGPSType2(ls[16], ls[15]);
+            this.endLoc = parseGPSType2(ls[19], ls[18]);
+            this.duration = Integer.parseInt(ls[2]);
         } else {
             System.err.println("Wrong trip format is given.");
         }
@@ -69,7 +80,7 @@ public class TaxiTrip {
     /**
      * Parse the gps string in type1 taxi file.
      * @param gps GPS string has format "41.9737,-87.8681", the quotations are included.
-     * @return a Point object
+     * @return a Point object (lon, lat)
      */
     Point parseGPSType1(String gps) {
         String g = gps.substring(1, gps.length() - 1);
@@ -84,47 +95,35 @@ public class TaxiTrip {
     }
 
     public static List<TaxiTrip> parseTaxiFiles() {
-        long t1 = System.currentTimeMillis();
-
         File taxiDir = new File(tripFilePath);
         List<TaxiTrip> trips = new LinkedList<>();
-        String[] filesType1 = taxiDir.list(new FilenameFilter() {
-            @Override
-            public boolean accept(File file, String s) {
-                return s.startsWith("201");
-            }
-        });
+        long t1 = System.currentTimeMillis();
+
         tripFormat = TAXITYPE.Type1;
-        try {
-            for (String fn : filesType1) {
-                BufferedReader fin = new BufferedReader(new FileReader(tripFilePath + File.separator + fn));
-                String l = fin.readLine();  // header
-                while ((l = fin.readLine()) != null) {
-                    TaxiTrip t;
-                    try {
-                        t = new TaxiTrip(l);
-                    } catch (Exception e) {
-                        continue;
-                    }
-                    trips.add(t);
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        parseTaxiFilesHelper(taxiDir, (file, s) -> s.matches("201[34]-.*"), trips);
         long t2 = System.currentTimeMillis();
         System.out.format("Parse all Type_1 taxi files finished in %d milliseconds.\n", (t2-t1));
         System.out.format("#totalTrip: %d\n#badTrip: %d\n", trips.size(), badTrip);
 
         tripFormat = TAXITYPE.Type2;
-        String[] filesType2 = taxiDir.list(new FilenameFilter() {
-            @Override
-            public boolean accept(File file, String s) {
-                return s.startsWith("Chicago Verifone");
-            }
-        });
+        parseTaxiFilesHelper(taxiDir, (file, s) -> s.startsWith("Chicago Verifone"), trips);
+        long t3 = System.currentTimeMillis();
+        System.out.format("Parse all Type_2 taxi files finished in %d milliseconds.\n", (t3-t2));
+        System.out.format("#totalTrip: %d\n#badTrip: %d\n", trips.size(), badTrip);
+
+        tripFormat = TAXITYPE.Type3;
+        parseTaxiFilesHelper(taxiDir, (file, s) -> s.matches("201[34]\\d+\\.csv"), trips);
+        long t4 = System.currentTimeMillis();
+        System.out.format("Parse all Type_3 taxi files finished in %d milliseconds.\n", (t4-t3));
+        System.out.format("#totalTrip: %d\n#badTrip: %d\n", trips.size(), badTrip);
+
+        return trips;
+    }
+
+    private static void parseTaxiFilesHelper(File taxiDir, FilenameFilter flt, List<TaxiTrip> trips) {
+        String[] files = taxiDir.list(flt);
         try {
-            for (String fn : filesType2) {
+            for (String fn : files) {
                 BufferedReader fin = new BufferedReader(new FileReader(tripFilePath + File.separator + fn));
                 String l = fin.readLine();  // header
                 while ((l = fin.readLine()) != null) {
@@ -136,15 +135,11 @@ public class TaxiTrip {
                     }
                     trips.add(t);
                 }
+                fin.close();
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
-        long t3 = System.currentTimeMillis();
-        System.out.format("Parse all Type_2 taxi files finished in %d milliseconds.\n", (t3-t2));
-        System.out.format("#totalTrip: %d\n#badTrip: %d\n", trips.size(), badTrip);
-
-        return trips;
     }
 
     public static void splitType3TaxiFile() {
@@ -178,8 +173,8 @@ public class TaxiTrip {
     }
 
     public static void main(String[] args) {
-//        parseTaxiFiles();
-        splitType3TaxiFile();
+        parseTaxiFiles();
+//        splitType3TaxiFile();
     }
 }
 
@@ -210,7 +205,7 @@ class ShortDate {
     }
 
     /**
-     * Parse the date in Type2 taxi "STARTDATE and STATETIME"
+     * Parse the date in Type2 and Type3 taxi "STARTDATE and STATETIME"
      * @param date datetime string, e.g. "6/10/2013 0:00" or "5/6/2013", without quotations.
      * @param time time sting, e.g. "12:00:00 AM", without quotations.
      * */
