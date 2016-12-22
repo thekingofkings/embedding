@@ -171,9 +171,17 @@ public class Tracts {
     }
 
     public static void main(String[] argv) {
-        Tracts tracts = new Tracts();
-        tracts.mapTripsIntoTracts();
-        tracts.timeSeries_traffic();
+        if (argv.length >= 1) {
+            if (argv[0].equals("tracts-ts")) {
+                Tracts tracts = new Tracts();
+                tracts.mapTripsIntoTracts();
+                tracts.timeSeries_traffic();
+            } else if (argv[0].equals("case-study")) {
+                case_by_poi();
+            }
+        } else {
+            System.out.println("Specify task!");
+        }
     }
 }
 
