@@ -33,8 +33,8 @@ ofSumMedian = np.median(outflowSum)
 ifSumMean = inflowSum.mean()
 ofSumMean = outflowSum.mean()
 
-ifRow = np.argwhere((inflowSum > ifSumMedian * 1) & (inflowSum < ifSumMean * 2))
-ofRow = np.argwhere((outflowSum > ofSumMedian* 1) & (outflowSum < ofSumMean * 2))
+ifRow = np.argwhere((inflowSum > ifSumMedian * 2) & (inflowSum < ifSumMean * 1.5))
+ofRow = np.argwhere((outflowSum > ofSumMedian* 2) & (outflowSum < ofSumMean * 1.5))
 commonRow = np.intersect1d(ifRow, ofRow)
 
 for r in commonRow:
@@ -66,14 +66,14 @@ f1 = plt.subplot(1,2,1)
 ll = []
 for l in range(NUM_CLUSTER):
     samplesRow = np.argwhere(iflables == l)
-    if len(samplesRow) == 9:
+    if len(samplesRow) == 7:
         c1 = samplesRow
     meanSample = np.mean(inflow[samplesRow,:], axis=0)
     meanSample = meanSample.reshape((24,))
     f1.plot(meanSample)
     legendLabel = "cluster {0} with {1} samples".format(l, len(samplesRow))
     ll.append(legendLabel)
-f1.legend(ll)
+f1.legend(ll, loc=0)
 f1.set_title("Inflow cluster")
 
 f2 = plt.subplot(1,2,2)
@@ -86,10 +86,36 @@ for l in range(NUM_CLUSTER):
     f2.plot(meanSample)
     legendLabel = "cluster {0} with {1} samples".format(l, len(samplesRow))
     ll.append(legendLabel)
-f2.legend(ll)
+f2.legend(ll, loc=0)
 f2.set_title("Outflow cluster")
 ll = []
 plt.show()
 
 
+office = tractId[c1]
+nightlife = tractId[c2]
+assert len(nightlife) == 21 and len(office) == 7
+import pickle
+pickle.dump([nightlife, office], open("tmp", "w"))
 
+plt.figure()
+for i in range(7):
+    f = plt.subplot(3,3,i+1)
+    f.plot(inflow[c1[i], :][0])
+    assert len(inflow[c1[i], :][0]) == 24 and len(outflow[c1[i], :][0]) == 24
+    f.plot(outflow[c1[i], :][0])
+    f.legend(["inflow", "outflow"], loc=0)
+    f.set_title("tract {0}".format(tractId[c1[i]]))
+plt.suptitle("professional tracts")
+plt.show()
+
+plt.figure()
+for i in range(21):
+    f = plt.subplot(5,5,i+1)
+    f.plot(inflow[c2[i], :][0])
+    assert len(inflow[c2[i], :][0]) == 24 and len(outflow[c2[i], :][0]) == 24
+    f.plot(outflow[c2[i], :][0])
+    f.legend(["inflow", "outflow"], loc=0)
+    f.set_title("tract {0}".format(tractId[c2[i]]))
+plt.suptitle("nightlife tracts")
+plt.show()
