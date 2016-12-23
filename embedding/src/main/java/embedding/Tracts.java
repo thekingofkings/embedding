@@ -83,10 +83,31 @@ public class Tracts {
         System.out.format("Map trips into tracts finished in %s seconds.\n", (t2-t1)/1000);
     }
 
-    public void visualizeCasesAsDotFile() {
-        Set<Integer> residence = new HashSet<>(Arrays.asList(new Integer[]{32100, 330100, 60800, 80100, 63302})); //
-        Set<Integer> nightlife = new HashSet<>(Arrays.asList(new Integer[]{832000, 81700, 62200, 243400})); //
-        Set<Integer> professional = new HashSet<>(Arrays.asList(new Integer[]{760801, 81401, 320100, 839100, 81800})); //
+    public void visualizeCasesAsDotFile(int residence, int nightlife, int professional) {
+        List<Integer> alltracts = new ArrayList<>(Arrays.asList(new Integer[]{residence, nightlife, professional}));
+        for (int hour = 0; hour < 24; hour++) {
+            try {
+                BufferedWriter fout = new BufferedWriter(new FileWriter(String.format("../miscs/case-%d.dot", hour)));
+                fout.write("digraph { \n");
+                fout.write(String.format("%d [color=blue];\n%d [color=red];\n%d [color=green];\n", residence, nightlife, professional));
+
+                for (int src : alltracts) {
+                    for (int dst : alltracts) {
+                        int w = tracts.get(src).getFlowTo(dst, hour);
+                        if (w > 0)
+                            fout.write(String.format("%d -> %d [label=\"%d\"];\n", src, dst, w));
+                    }
+                }
+                fout.write("}\n");
+                fout.close();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+
+    public void visualizeCasesAsDotFile(Set<Integer> residence, Set<Integer> nightlife, Set<Integer> professional) {
         List<Integer> alltracts = Stream.of(residence, nightlife, professional).flatMap(x -> x.stream()).collect(Collectors.toList());
 
         for (int hour = 0; hour < 24; hour++) {
@@ -105,13 +126,10 @@ public class Tracts {
                 }
                 // plot each edge with weight
                 for (int src : alltracts) {
-                    Map<Integer, Integer> flowMap = tracts.get(src).taxiFlows.get(hour);  // the flow map of hour
                     for (int dst : alltracts) {
-                        if (flowMap.containsKey(dst)) {
-                            int w = flowMap.get(dst);
-                            if (w > 14)
-                                fout.write(String.format("%d -> %d [label=\"%d\"];\n", src, dst, w));
-                        }
+                        int w = tracts.get(src).getFlowTo(dst, hour);
+                        if (w > 0)
+                            fout.write(String.format("%d -> %d [label=\"%d\"];\n", src, dst, w));
                     }
                 }
                 fout.write("}\n");
@@ -119,7 +137,6 @@ public class Tracts {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-
         }
     }
 
@@ -165,9 +182,75 @@ public class Tracts {
 
     public static void case_by_poi() {
         Tracts tracts = new Tracts();
-        Set<Integer> focusTracts = new HashSet<>(Arrays.asList(new Integer[]{330100, 32100, 63302, 80100, 60800, 81700, 62200, 832000, 243400, 839100, 320100, 81800, 760801, 81401}));
+        Set<Integer> residence = new HashSet<>(Arrays.asList(new Integer[]{32100, 330100, 60800, 80100, 63302})); //
+        Set<Integer> nightlife = new HashSet<>(Arrays.asList(new Integer[]{832000, 81700, 62200, 243400})); //
+        Set<Integer> professional = new HashSet<>(Arrays.asList(new Integer[]{760801, 81401, 320100, 839100, 81800})); //
+        Set<Integer> focusTracts = Stream.of(residence, nightlife, professional).flatMap(x->x.stream()).collect(Collectors.toSet());
         tracts.mapTripsIntoTracts(focusTracts);
-        tracts.visualizeCasesAsDotFile();
+        tracts.visualizeCasesAsDotFile(residence, nightlife, professional);
+    }
+
+    public static void case_by_timeseries() {
+        Tracts tracts = new Tracts();
+        Set<Integer> rsd = new HashSet<>(Arrays.asList(new Integer[]{390600, 831100}));
+        Set<Integer> prof = new HashSet<>(Arrays.asList(new Integer[]{838200}));
+        Set<Integer> nl = new HashSet<>(Arrays.asList(new Integer[]{62500, 61100}));
+        Set<Integer> focusTracts = Stream.of(rsd, nl, prof).flatMap(x->x.stream()).collect(Collectors.toSet());
+        tracts.mapTripsIntoTracts(focusTracts);
+        tracts.visualizeCasesAsDotFile(rsd, nl, prof);
+    }
+
+    public static void case_from_bruteForce() {
+        int res = 51100, prof = 330100, nl = 831900;
+        Tracts tracts = new Tracts();
+        Set<Integer> focusTracts = new HashSet<>(Arrays.asList(new Integer[]{res, prof, nl}));
+        tracts.mapTripsIntoTracts(focusTracts);
+        tracts.visualizeCasesAsDotFile(res, nl, prof);
+    }
+
+    /**
+     * Enumerate all triplet tracts and check their flow pattern.
+     */
+    public static void bruteForceSearchCase() {
+        long ts = System.currentTimeMillis();
+        System.out.println("Start brute force searching possible triplet cases...");
+
+        Tracts tracts = new Tracts();
+        tracts.mapTripsIntoTracts();
+        try {
+            BufferedWriter fout = new BufferedWriter(new FileWriter("../miscs/brute-force-pairs.csv"));
+            int cnt = 0, posCnt = 0;
+            for (Tract t1 : tracts.tracts.values()) {
+                for (Tract t2 : tracts.tracts.values()) {
+                    if (t2.id == t1.id)
+                        continue;
+                    for (Tract t3 : tracts.tracts.values()) {
+                        if (cnt++ % 1000000 == 0) {
+                            System.out.format("%d positive pairs out of %d processed pairs.\n", posCnt, cnt);
+                        }
+                        if (t3.id == t1.id || t3.id == t2.id)
+                            continue;
+                        // check pattern by assume t1 is residence, t2 is office, and t3 is night life
+                        if (t1.getFlowTo(t2.id, 7, 9) <= 5 * t2.getFlowTo(t1.id, 7, 9) ||   // in the morning, more people go to work than going back from work
+                               t1.getFlowTo(t3.id, 17, 22) <= 5 * t1.getFlowTo(t3.id, 7, 12) || // more people go to night club at night than during the day (from home)
+                                t2.getFlowTo(t1.id, 17, 22) <= 5 * t1.getFlowTo(t2.id, 17, 22) || // in the afternoon, more people go back home from work than going to work
+                                t2.getFlowTo(t3.id, 17, 22) <= 5 * t2.getFlowTo(t3.id, 7, 12) || // more people go to night club at night than during the day (from office)
+                                t3.getFlowTo(t1.id, 17, 23) <= 5 * t3.getFlowTo(t1.id, 7, 13) ||  // more people go back home from night club at night than during the day
+                                t3.getFlowTo(t1.id, 17, 23) <= 5 * t1.getFlowTo(t3.id, 17, 23)) {   // at night, more people going back home than going to nightclub
+                            continue;
+                        } else {
+                            posCnt ++;
+                            fout.write(String.format("%d\t%d\t%d\n", t1.id, t2.id, t3.id));
+                        }
+                    }
+                }
+            }
+            fout.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        long te = System.currentTimeMillis();
+        System.out.format("Search complete in %d seconds.\n", (te-ts)/1000);
     }
 
     public static void main(String[] argv) {
@@ -176,8 +259,14 @@ public class Tracts {
                 Tracts tracts = new Tracts();
                 tracts.mapTripsIntoTracts();
                 tracts.timeSeries_traffic();
-            } else if (argv[0].equals("case-study")) {
+            } else if (argv[0].equals("case-poi")) {
                 case_by_poi();
+            } else if (argv[0].equals("case-ts")) {
+                case_by_timeseries();
+            } else if (argv[0].equals("brute-force-search-case")) {
+                bruteForceSearchCase();
+            } else if (argv[0].equals("case-brute")) {
+                case_from_bruteForce();
             }
         } else {
             System.out.println("Specify task!");
@@ -209,5 +298,15 @@ class Tract {
 
     public Geometry getBoundary() {
         return this.boundary;
+    }
+
+    public int getFlowTo(int dstId, int hour) {
+        return taxiFlows.get(hour).getOrDefault(dstId, 0);
+    }
+    public int getFlowTo(int dstId, int hourLow, int hourHigh) {
+        int cnt = 0;
+        for (int h = hourLow; h <= hourHigh; h++)
+            cnt += taxiFlows.get(h).getOrDefault(dstId, 0);
+        return cnt;
     }
 }

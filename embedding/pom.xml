@@ -86,7 +86,7 @@
             <configuration>
               <mainClass>embedding.Tracts</mainClass>
               <arguments>
-                <argument>case-study</argument>
+                <argument>case-poi</argument>
               </arguments>
             </configuration>
           </execution>
