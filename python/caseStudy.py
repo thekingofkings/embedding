@@ -96,7 +96,7 @@ office = tractId[c1]
 nightlife = tractId[c2]
 assert len(nightlife) == 21 and len(office) == 7
 import pickle
-pickle.dump([nightlife, office], open("tmp", "w"))
+pickle.dump([nightlife, office], open("tmp.pickle", "w"))
 
 plt.figure()
 for i in range(7):

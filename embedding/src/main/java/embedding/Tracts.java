@@ -201,7 +201,7 @@ public class Tracts {
     }
 
     public static void case_from_bruteForce() {
-        int res = 51100, prof = 330100, nl = 831900;
+        int res = 832000, prof = 839100, nl = 831900;
         Tracts tracts = new Tracts();
         Set<Integer> focusTracts = new HashSet<>(Arrays.asList(new Integer[]{res, prof, nl}));
         tracts.mapTripsIntoTracts(focusTracts);
@@ -231,12 +231,16 @@ public class Tracts {
                         if (t3.id == t1.id || t3.id == t2.id)
                             continue;
                         // check pattern by assume t1 is residence, t2 is office, and t3 is night life
-                        if (t1.getFlowTo(t2.id, 7, 9) <= 5 * t2.getFlowTo(t1.id, 7, 9) ||   // in the morning, more people go to work than going back from work
-                               t1.getFlowTo(t3.id, 17, 22) <= 5 * t1.getFlowTo(t3.id, 7, 12) || // more people go to night club at night than during the day (from home)
-                                t2.getFlowTo(t1.id, 17, 22) <= 5 * t1.getFlowTo(t2.id, 17, 22) || // in the afternoon, more people go back home from work than going to work
-                                t2.getFlowTo(t3.id, 17, 22) <= 5 * t2.getFlowTo(t3.id, 7, 12) || // more people go to night club at night than during the day (from office)
-                                t3.getFlowTo(t1.id, 17, 23) <= 5 * t3.getFlowTo(t1.id, 7, 13) ||  // more people go back home from night club at night than during the day
-                                t3.getFlowTo(t1.id, 17, 23) <= 5 * t1.getFlowTo(t3.id, 17, 23)) {   // at night, more people going back home than going to nightclub
+                        if (t1.getFlowTo(t2.id, 7, 9) <= 30 ||
+                                t3.getFlowTo(t1.id, 17, 23) <= 70 ||
+                                t2.getFlowTo(t3.id, 17, 23) <= 70 ||
+                                t1.getFlowTo(t2.id, 7, 9) <= 2 * t2.getFlowTo(t1.id, 7, 9) ||   // in the morning, more people go to work than going back from work
+                                t1.getFlowTo(t3.id, 17, 22) <= 2 * t1.getFlowTo(t3.id, 7, 12) || // more people go to night club at night than during the day (from home)
+                                t2.getFlowTo(t1.id, 17, 22) <= 2 * t1.getFlowTo(t2.id, 17, 22) || // in the afternoon, more people go back home from work than going to work
+                                t2.getFlowTo(t3.id, 17, 22) <= 2 * t2.getFlowTo(t3.id, 7, 12) ||  // more people go to night club at night than during the day (from office)
+                                t3.getFlowTo(t1.id, 17, 23) <= 2 * t3.getFlowTo(t1.id, 7, 13) ||  // more people go back home from night club at night than during the day
+                                t3.getFlowTo(t1.id, 17,23) <= 2 * t3.getFlowTo(t2.id, 17, 23) ||  // at night, more people to back home than to office from night club
+                                t3.getFlowTo(t1.id, 17, 23) <= 2 * t1.getFlowTo(t3.id, 17, 23)) {   // at night, more people going back home than going to nightclub
                             continue;
                         } else {
                             posCnt ++;
