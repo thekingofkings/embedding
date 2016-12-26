@@ -140,6 +140,9 @@ public class Tracts {
         }
     }
 
+    /**
+     * Generate time series of in/out taxi flow for each regions.
+     */
     public void timeSeries_traffic() {
         timeSeries_traffic(tracts.keySet());
     }
@@ -179,6 +182,49 @@ public class Tracts {
         }
     }
 
+    public void outputEdgeFile() {
+        try {
+            for (int h = 0; h < 24; h++) {
+                BufferedWriter fout = new BufferedWriter(new FileWriter(String.format("../miscs/taxi-h%d.od", h)));
+                for (Tract t : tracts.values()) {
+                    for (int dst : t.taxiFlows.get(h).values()) {
+                        fout.write(String.format("%d %d %d\n", t.id, dst, t.getFlowTo(dst, h)));
+                    }
+                }
+                fout.close();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void outputAdjacencyMatrix() {
+        try {
+            for (int h = 0; h < 24; h++) {
+                BufferedWriter fout = new BufferedWriter(new FileWriter(String.format("../miscs/taxi-h%d.matrix", h)));
+                List<Integer> sortedId = new LinkedList<>(tracts.keySet());
+                sortedId.sort((a,b) -> a.compareTo(b));
+                for (int src : sortedId) {
+                    List<String> row = new LinkedList<>();
+                    for (int dst : sortedId) {
+                        row.add(Integer.toString(tracts.get(src).getFlowTo(dst, h)));
+                    }
+                    String line = String.join(",", row) + "\n";
+                    fout.write(line);
+                }
+                fout.close();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void generateEdgeFileForEmbedding() {
+        Tracts trts = new Tracts();
+        trts.mapTripsIntoTracts();
+        trts.outputEdgeFile();  // for graph embedding LINE
+        trts.outputAdjacencyMatrix();   // for matrix factorization
+    }
 
     public static void case_by_poi() {
         Tracts tracts = new Tracts();
@@ -271,6 +317,8 @@ public class Tracts {
                 bruteForceSearchCase();
             } else if (argv[0].equals("case-brute")) {
                 case_from_bruteForce();
+            } else if (argv[0].equals("edge-file")) {
+                generateEdgeFileForEmbedding();
             }
         } else {
             System.out.println("Specify task!");

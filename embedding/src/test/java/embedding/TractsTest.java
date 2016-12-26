@@ -7,6 +7,8 @@ import org.opengis.feature.simple.SimpleFeature;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * Unit test for Tracts class.
@@ -43,6 +45,16 @@ public class TractsTest extends TestCase {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public void testSortedIDs() {
+        Tracts trts = new Tracts();
+        List<Integer> sortedIds = new LinkedList<>(trts.tracts.keySet());
+        sortedIds.sort((a, b) -> a.compareTo(b));
+        assertEquals(sortedIds.size(), 801);
+        assertEquals((int) sortedIds.get(0), 10100);
+        assertEquals((int) sortedIds.get(800), 980100);
+        assertTrue(sortedIds.get(0) < sortedIds.get(800));
     }
 
 }
