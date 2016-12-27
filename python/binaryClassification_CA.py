@@ -1,3 +1,6 @@
+"""
+Binary classification evaluation at Community Area level.
+"""
 from sklearn import tree, svm
 from sklearn.model_selection import cross_val_score
 import pickle

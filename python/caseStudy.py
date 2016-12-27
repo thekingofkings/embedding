@@ -7,6 +7,13 @@ Ideal case:
     The hypothesis is true: in the morning, people go to office tract from residential area.
     In the afternoon, when office hour is over, they went to nightlife tracts for fun. In the night, they
     went home.
+    
+Conclusion:
+    The hypotheis is not verified through this script. Using flow time series to find such flow
+    is only wishful thinking.
+    
+    But this does not necessarily mean that the hypotheis is invalid. (Actually, later experiments by 
+    brutely enumerating all possible triplets validate the hypotheis.)
 
 Created on Thu Dec 22 19:02:35 2016
 

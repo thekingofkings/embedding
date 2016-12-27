@@ -187,8 +187,10 @@ public class Tracts {
             for (int h = 0; h < 24; h++) {
                 BufferedWriter fout = new BufferedWriter(new FileWriter(String.format("../miscs/taxi-h%d.od", h)));
                 for (Tract t : tracts.values()) {
-                    for (int dst : t.taxiFlows.get(h).values()) {
-                        fout.write(String.format("%d %d %d\n", t.id, dst, t.getFlowTo(dst, h)));
+                    for (int dst : t.taxiFlows.get(h).keySet()) {
+                        int w = t.getFlowTo(dst, h);
+                        if (w > 0)
+                            fout.write(String.format("%d %d %d\n", t.id, dst, w));
                     }
                 }
                 fout.close();
