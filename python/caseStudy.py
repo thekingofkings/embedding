@@ -24,6 +24,23 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
+
+def batchPlot(inflow, outflow, tractId):
+    plt.figure()
+    for i in range(4):
+        f = plt.subplot(2,2,i+1)
+        f.plot(inflow[i, :])
+        f.plot(outflow[i, :])
+        f.axvline(x=10)
+        f.axvline(x=12)
+        f.axvline(x=14)
+        f.legend(["inflow", "outflow"], loc=0)
+        f.set_title("tract {0}".format(tractId[i]))
+    plt.suptitle("professional tracts")
+    plt.show()
+
+
+
 f = np.loadtxt("../miscs/taxi-flow-time-series.txt", delimiter=",")
 n = f.shape[0]
 tractId = f[0:n:2, 0]

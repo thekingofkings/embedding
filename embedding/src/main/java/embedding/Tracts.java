@@ -245,24 +245,13 @@ public class Tracts {
     public void outputEdgeGraph_crossInterval() {
         try {
             BufferedWriter fout = new BufferedWriter(new FileWriter("../miscs/taxi-crossInterval.od"));
-            for (Tract t : tracts.values()) {
-                for (Tract dst : tracts.values()) {
-                    int w1 = t.getFlowTo(dst.id, 5, 10);
-                    if (w1 > 0)
-                        fout.write(String.format("morn%d noon%d %d\n", t.id, dst.id, w1));
-
-                    int w2 = t.getFlowTo(dst.id, 11, 15);
-                    if (w2 > 0)
-                        fout.write(String.format("noon%d aftr%d %d\n", t.id, dst.id, w2));
-
-                    int w3 = t.getFlowTo(dst.id, 16, 21);
-                    if (w3 > 0)
-                        fout.write(String.format("aftr%d nght%d %d\n", t.id, dst.id, w3));
-
-                    int w4 = t.getFlowTo(dst.id, 22, 23);
-                    w4 += t.getFlowTo(dst.id, 0, 4);
-                    if (w4 > 0)
-                        fout.write(String.format("nght%d morn%d %d\n", t.id, dst.id, w4));
+            for (int h = 0; h < 24; h++) {
+                for (Tract t : tracts.values()) {
+                    for (Tract dst : tracts.values()) {
+                        int w = t.getFlowTo(dst.id, h);
+                        if (w > 0)
+                            fout.write(String.format("%d-%d %d-%d %d\n", h, t.id, (h+1)%24, dst.id, w));
+                    }
                 }
             }
             fout.close();
@@ -360,8 +349,9 @@ public class Tracts {
         if (argv.length >= 1) {
             if (argv[0].equals("tracts-ts")) {
                 Tracts tracts = new Tracts();
-                tracts.mapTripsIntoTracts();
-                tracts.timeSeries_traffic();
+                Set<Integer> foc = new HashSet<>(Arrays.asList(new Integer[]{839100, 81800, 81403, 320100}));
+                tracts.mapTripsIntoTracts(foc);
+                tracts.timeSeries_traffic(foc);
             } else if (argv[0].equals("case-poi")) {
                 case_by_poi();
             } else if (argv[0].equals("case-ts")) {
