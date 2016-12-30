@@ -182,6 +182,16 @@ public class Tracts {
         }
     }
 
+    /**
+     * =====================================================
+     * Build hourly taxi flow graphs and output them
+     * =====================================================
+     */
+
+    /**
+     * Output the taxi flow as edge file, namely, each row is an edge, (src, dst, weight). The edge graph is constructed
+     * hour by hour independently, and there will be 24 edge graphs.
+     */
     public void outputEdgeFile() {
         try {
             for (int h = 0; h < 24; h++) {
@@ -200,6 +210,9 @@ public class Tracts {
         }
     }
 
+    /**
+     * Output the hourly taxi flow graph as an adjacency matrix. The graph is exactly the same as {@link Tracts#outputEdgeFile()}.
+     */
     public void outputAdjacencyMatrix() {
         try {
             for (int h = 0; h < 24; h++) {
@@ -221,11 +234,49 @@ public class Tracts {
         }
     }
 
+    /**
+     * Generate a new edge graph and output it into a file.
+     *
+     * The crossInterval edge graph is a graph such that within each time interval, there is no edges; cross two consecutive
+     * intervals, there are edges and the weight denoting the traffic flow count in previous interval.
+     *
+     * The basic assumption is that people go to B from A during interval t_i, then they stay there in t_i+1.
+     */
+    public void outputEdgeGraph_crossInterval() {
+        try {
+            BufferedWriter fout = new BufferedWriter(new FileWriter("../miscs/taxi-crossInterval.od"));
+            for (Tract t : tracts.values()) {
+                for (Tract dst : tracts.values()) {
+                    int w1 = t.getFlowTo(dst.id, 5, 10);
+                    if (w1 > 0)
+                        fout.write(String.format("morn%d noon%d %d\n", t.id, dst.id, w1));
+
+                    int w2 = t.getFlowTo(dst.id, 11, 15);
+                    if (w2 > 0)
+                        fout.write(String.format("noon%d aftr%d %d\n", t.id, dst.id, w2));
+
+                    int w3 = t.getFlowTo(dst.id, 16, 21);
+                    if (w3 > 0)
+                        fout.write(String.format("aftr%d nght%d %d\n", t.id, dst.id, w3));
+
+                    int w4 = t.getFlowTo(dst.id, 22, 23);
+                    w4 += t.getFlowTo(dst.id, 0, 4);
+                    if (w4 > 0)
+                        fout.write(String.format("nght%d morn%d %d\n", t.id, dst.id, w4));
+                }
+            }
+            fout.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     public static void generateEdgeFileForEmbedding() {
         Tracts trts = new Tracts();
         trts.mapTripsIntoTracts();
         trts.outputEdgeFile();  // for graph embedding LINE
         trts.outputAdjacencyMatrix();   // for matrix factorization
+        trts.outputEdgeGraph_crossInterval();
     }
 
     public static void case_by_poi() {
