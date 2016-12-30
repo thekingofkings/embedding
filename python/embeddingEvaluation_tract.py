@@ -71,6 +71,8 @@ def generatePairWiseGT(rids, tract_poi):
             if k2 == k:
                 continue
             c = cosine(gnd_vec[k], gnd_vec[k2])
+            if np.isnan(c):
+                c = 2
             cosDist.append((k2, c))
         cosDist.sort(key=lambda x: x[1])
         gnd_pair[k] = [cosDist[i][0] for i in range(3)]
@@ -86,6 +88,12 @@ def selectSamples(labels, rids, ordKey):
     
     
 def retrieveEmbeddingFeatures():
+    """
+    Retrive embeddings for each region from the *.vec file.
+    
+    The first line of *.vec file is region count.
+    Beginning from the second line, the first column is the region ID, then it is the embedding.
+    """
     embedF = []
     embedRid = []
     for h in range(24):
@@ -95,6 +103,39 @@ def retrieveEmbeddingFeatures():
         assert t.shape[1]==20
         embedF.append(t)
     return embedF, embedRid
+    
+    
+def retrieveCrossIntervalEmbeddings():
+    t = np.genfromtxt("../miscs/taxi-crossInterval.vec", delimiter=" ", skip_header=1, dtype=None)
+    tid = [row[0] for row in t]
+    
+    t = np.genfromtxt("../miscs/taxi-crossInterval.vec", delimiter=" ", skip_header=1)
+    f = t[:, 1:]
+    
+    embeddings = {}
+    features = {}
+    rids = {}
+    for i, v in enumerate(tid):
+        k1 = v[0:4]
+        k2 = int(v[4:])
+        if k1 not in embeddings:
+            embeddings[k1] = {k2: f[i]}
+            features[k1] = [f[i]]
+            rids[k1] = [k2]
+        else:
+            embeddings[k1][k2] = f[i]
+            features[k1].append(f[i])
+            rids[k1].append(k2)
+    
+    
+#    for h in embeddings:
+#        features[h] = []
+#        rids[h] = []
+#        for k, v in embeddings[h].items():
+#            rids[h].append(k)
+#            features[h].append(v)
+    
+    return features, rids
 
     
 def pairwiseEstimator(features, rids):
@@ -195,27 +236,39 @@ def evalute_by_pairwise_similarity():
         ordKey = pickle.load(fin)
         tract_poi = pickle.load(fin)
     
-    with open("nmf-tract.pickle") as fin2:
-        nmfeatures = pickle.load(fin2)
-        nmRid = pickle.load(fin2)
+#    with open("nmf-tract.pickle") as fin2:
+#        nmfeatures = pickle.load(fin2)
+#        nmRid = pickle.load(fin2)
         
-    embedFeatures, embedRid = retrieveEmbeddingFeatures()
+#    embedFeatures, embedRid = retrieveEmbeddingFeatures()
+#    
+#    ACC1 = []
+#    ACC2 = []
+#    plt.figure()
+#    for h in range(24):
+#        pe_embed = pairwiseEstimator(embedFeatures[h], embedRid[h])
+#        pe_mf = pairwiseEstimator(nmfeatures[h], nmRid[h])    
+#        pair_gnd = generatePairWiseGT(embedRid[h], tract_poi)
+#        acc1 = topK_accuracy(20, pe_embed, pair_gnd)
+#        acc2 = topK_accuracy(20, pe_mf, pair_gnd)
+#        ACC1.append(acc1)
+#        ACC2.append(acc2)
+#        print h, acc1, acc2
+#    plt.plot(ACC1)
+#    plt.plot(ACC2)
+#    plt.legend(["Embedding", "MF"], loc='best')
     
-    ACC1 = []
-    ACC2 = []
-    plt.figure()
-    for h in range(24):
-        pe_embed = pairwiseEstimator(embedFeatures[h], embedRid[h])
-        pe_mf = pairwiseEstimator(nmfeatures[h], nmRid[h])    
-        pair_gnd = generatePairWiseGT(embedRid[h], tract_poi)
-        acc1 = topK_accuracy(20, pe_embed, pair_gnd)
-        acc2 = topK_accuracy(20, pe_mf, pair_gnd)
-        ACC1.append(acc1)
-        ACC2.append(acc2)
-        print h, acc1, acc2
-    plt.plot(ACC1)
-    plt.plot(ACC2)
-    plt.legend(["Embedding", "MF"], loc='best')
+    
+    ACC3 = []
+    crossInterEmbeds, rids = retrieveCrossIntervalEmbeddings()
+    for h in ['morn', 'noon', 'aftr', 'nght']:
+        pe_cie = pairwiseEstimator(crossInterEmbeds[h], rids[h])
+        pair_gnd = generatePairWiseGT(rids[h], tract_poi)
+        acc3 = topK_accuracy(20, pe_cie, pair_gnd)
+        print h, acc3
+        ACC3.append(acc3)
+    return pair_gnd, rids[h]
+        
         
     
 
@@ -236,6 +289,8 @@ def casestudy_pairwise_similarity():
         pe_mf = pairwiseEstimator(nmfeatures[h], nmRid[h])
         pair_gnd = generatePairWiseGT(embedRid[h], tract_poi)
         topKcover_case(5, pe_embed, pair_gnd, pe_mf)
+
+        
         
     
     
@@ -245,10 +300,14 @@ if __name__ == '__main__':
     if len(sys.argv) > 1:
         if sys.argv[1] == "binary":
             evalute_by_binary_classification()
-        elif sys.argv[1] == "pairewise-eval":
-            evalute_by_pairwise_similarity()
+        elif sys.argv[1] == "pairwise-eval":
+            t, d = evalute_by_pairwise_similarity()
         elif sys.argv[1] == "pairwise-case":
             casestudy_pairwise_similarity()
+        else:
+            print "wrong parameter"
     else:
         print "missing parameter"
+        f1, i1 = retrieveCrossIntervalEmbeddings()
+        
     
