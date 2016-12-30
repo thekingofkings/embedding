@@ -98,6 +98,17 @@ def retrieveEmbeddingFeatures():
 
     
 def pairwiseEstimator(features, rids):
+    """
+    Use the feature vectors for each sample to find the k-nearest neighbors for each sample.
+    
+    Input:
+        features - a matrix containing features of all samples.
+        rids - a list containing the region IDs for previous samples. Order match
+    
+    Output:
+        return a dicionary containing the KNN lists for each region in the rids.
+        The key of dictionary is the Id of each region.
+    """
     estimates = {}
     for i, k in enumerate(rids):
         pd = []
@@ -156,6 +167,27 @@ def topK_accuracy(k, estimator, pair_gnd):
             cnt += 1
     return float(cnt) / total
     
+
+
+def topKcover_case(k, estimator, pair_gnd, cmp_estimator):
+    """
+    Print out cases where the estimator covers the ground truth in the top k answers.
+    
+    Input:
+        k - number of top answers to give
+        estimator - the embedding estimator, a dictionary with region id as key and KNN list as value
+        pair_gnd - the ground truth, same format as estimator
+        cmp_estimator - the method to compare (MF), same format as estimator
+    """
+    for rid in estimator:
+        knn = [estimator[rid][i][0] for i in range(k)]
+        cmp_knn = [cmp_estimator[rid][i][0] for i in range(k)]
+        if len(np.intersect1d(knn, pair_gnd[rid])) == len(pair_gnd[rid]):
+            print "Case", rid
+            print pair_gnd[rid]
+            print knn
+            print len(np.intersect1d(cmp_knn, pair_gnd[rid])), cmp_knn
+    
     
     
 def evalute_by_pairwise_similarity():
@@ -186,7 +218,25 @@ def evalute_by_pairwise_similarity():
     plt.legend(["Embedding", "MF"], loc='best')
         
     
+
+def casestudy_pairwise_similarity():
+    with open("../miscs/POI_tract.pickle") as fin:
+        ordKey = pickle.load(fin)
+        tract_poi = pickle.load(fin)
+        
+    with open("nmf-tract.pickle") as fin2:
+        nmfeatures = pickle.load(fin2)
+        nmRid = pickle.load(fin2)
+
+    embedFeatures, embedRid = retrieveEmbeddingFeatures()
     
+    for h in range(24):
+        print "Hour:", h
+        pe_embed = pairwiseEstimator(embedFeatures[h], embedRid[h])
+        pe_mf = pairwiseEstimator(nmfeatures[h], nmRid[h])
+        pair_gnd = generatePairWiseGT(embedRid[h], tract_poi)
+        topKcover_case(5, pe_embed, pair_gnd, pe_mf)
+        
     
     
     
@@ -195,8 +245,10 @@ if __name__ == '__main__':
     if len(sys.argv) > 1:
         if sys.argv[1] == "binary":
             evalute_by_binary_classification()
-        elif sys.argv[1] == "pairewise":
+        elif sys.argv[1] == "pairewise-eval":
             evalute_by_pairwise_similarity()
+        elif sys.argv[1] == "pairwise-case":
+            casestudy_pairwise_similarity()
     else:
         print "missing parameter"
     
