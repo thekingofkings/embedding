@@ -113,11 +113,11 @@ def retrieveEmbeddingFeatures():
     return embedF, embedRid
     
     
-def retrieveCrossIntervalEmbeddings():
-    t = np.genfromtxt("../miscs/taxi-crossInterval.vec", delimiter=" ", skip_header=1, dtype=None)
+def retrieveCrossIntervalEmbeddings(fn="../miscs/taxi-crossInterval.vec", skipheader=1):
+    t = np.genfromtxt(fn, delimiter=" ", skip_header=skipheader, dtype=None)
     tid = [row[0] for row in t]
     
-    t = np.genfromtxt("../miscs/taxi-crossInterval.vec", delimiter=" ", skip_header=1)
+    t = np.genfromtxt(fn, delimiter=" ", skip_header=skipheader)
     f = t[:, 1:]
     
     embeddings = {}
@@ -249,7 +249,7 @@ def evalute_by_pairwise_similarity():
         nmRid = pickle.load(fin2)
         
     embedFeatures, embedRid = retrieveEmbeddingFeatures()
-    crossInterEmbeds, ciRids = retrieveCrossIntervalEmbeddings()
+    crossInterEmbeds, ciRids = retrieveCrossIntervalEmbeddings("../miscs/taxi-deepwalk.vec", skipheader=0)
     
     features, rid = retrieveEmbeddingFeatures_helper("../miscs/taxi-all.vec")
     pe_all_embed = pairwiseEstimator(features, rid)
