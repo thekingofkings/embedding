@@ -205,6 +205,17 @@ public class Tracts {
                 }
                 fout.close();
             }
+
+            // one static graph (without temporal dynamics)
+            BufferedWriter fout = new BufferedWriter(new FileWriter("../miscs/taxi-all.od"));
+            for (Tract src: tracts.values()) {
+                for (Tract dst: tracts.values()) {
+                    int w = src.getFlowTo(dst.id, 0, 23);
+                    if (w > 0)
+                        fout.write(String.format("%d %d %d\n", src.id, dst.id, w));
+                }
+            }
+            fout.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -264,8 +275,8 @@ public class Tracts {
         Tracts trts = new Tracts();
         trts.mapTripsIntoTracts();
         trts.outputEdgeFile();  // for graph embedding LINE
-        trts.outputAdjacencyMatrix();   // for matrix factorization
-        trts.outputEdgeGraph_crossInterval();
+        //trts.outputAdjacencyMatrix();   // for matrix factorization
+        //trts.outputEdgeGraph_crossInterval();
     }
 
     public static void case_by_poi() {

@@ -87,6 +87,14 @@ def selectSamples(labels, rids, ordKey):
     return labels[idx]
     
     
+def retrieveEmbeddingFeatures_helper(fileName):
+    t = np.genfromtxt(fileName, delimiter=" ", skip_header=1)
+    rid = t[:,0].astype(int)
+    features = t[:, 1:]
+    assert features.shape[1] == 20
+    return features, rid
+    
+    
 def retrieveEmbeddingFeatures():
     """
     Retrive embeddings for each region from the *.vec file.
@@ -242,6 +250,12 @@ def evalute_by_pairwise_similarity():
         
     embedFeatures, embedRid = retrieveEmbeddingFeatures()
     crossInterEmbeds, ciRids = retrieveCrossIntervalEmbeddings()
+    
+    features, rid = retrieveEmbeddingFeatures_helper("../miscs/taxi-all.vec")
+    pe_all_embed = pairwiseEstimator(features, rid)
+    pair_gnd = generatePairWiseGT(rid, tract_poi)
+    acc = topK_accuracy(20, pe_all_embed, pair_gnd)
+    print "Acc of static graph", acc
     
     ACC1 = []
     ACC2 = []
