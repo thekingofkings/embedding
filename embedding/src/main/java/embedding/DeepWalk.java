@@ -21,7 +21,7 @@ public class DeepWalk {
     private static Logger log = LoggerFactory.getLogger(DeepWalk.class);
 
     public static void learnEmbedding() throws Exception{
-        String filePath = new File("../miscs/taxi-crosstime.seq").getAbsolutePath();
+        String filePath = new File("../miscs/taxi-crosstime-fifth.seq").getAbsolutePath();
 
         log.info("Load and vectorize");
         SentenceIterator itr = new BasicLineIterator(filePath);
@@ -29,7 +29,7 @@ public class DeepWalk {
 
         log.info("Building model");
         Word2Vec w2v = new Word2Vec.Builder().minWordFrequency(2)
-                .layerSize(20).iterations(2).windowSize(24)
+                .layerSize(20).iterations(1).windowSize(24)
                 .iterate(itr).tokenizerFactory(t).build();
 
         log.info("Fitting w2v model");
