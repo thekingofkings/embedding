@@ -21,7 +21,7 @@ public class DeepWalk {
     private static Logger log = LoggerFactory.getLogger(DeepWalk.class);
 
     public static void learnEmbedding() throws Exception{
-        String filePath = new File("../miscs/taxi-crosstime-fifth.seq").getAbsolutePath();
+        String filePath = new File("../miscs/taxi-crosstime.seq").getAbsolutePath();
 
         log.info("Load and vectorize");
         SentenceIterator itr = new BasicLineIterator(filePath);

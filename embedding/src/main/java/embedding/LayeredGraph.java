@@ -1,8 +1,5 @@
 package embedding;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -10,27 +7,29 @@ import java.util.Map;
 import java.util.Random;
 
 /**
- * Build cross-time graph and sample node sequence from it.
+ * Build a layered graph and sample node sequence from it.
+ * We use word2vec to learn the node embedding, and thus
+ * each node name is String type.
  *
  * Created by kok on 1/2/17.
  */
-public class CrossTimeGraph {
+public class LayeredGraph {
 
     public static Random rnd = new Random();
 
-    class Edge {
+    static public class Edge {
         public Vertex from;
         public Vertex to;
         public double weight;
 
         public Edge(Vertex f, Vertex t, double w) {
-            from = t;
+            from = f;
             to = t;
             weight = w;
         }
     }
 
-    class Vertex {
+    static public class Vertex {
 
         public String name;
         public int id;
@@ -65,28 +64,13 @@ public class CrossTimeGraph {
     public List<Edge> allEdges;
     public Map<String, Vertex> allVertices;
     public List<Vertex> sourceVertices;
-    private double sourceWeightSum;
+    protected double sourceWeightSum;
 
-    public CrossTimeGraph() {
+    public LayeredGraph() {
         allEdges = new LinkedList<>();
         allVertices = new HashMap<>();
         sourceVertices = new LinkedList<>();
         sourceWeightSum = 0;
-    }
-
-    /**
-     * addSourceVertex should be called after all edges are added.
-     * @param vn
-     */
-    public void addSourceVertex(String vn) {
-        Vertex v;
-        if (! allVertices.containsKey(vn))
-            v = new Vertex(vn, allVertices.size());
-        else
-            v = allVertices.get(vn);
-
-        sourceVertices.add(v);
-        sourceWeightSum += v.outDegree;
     }
 
     public void addEdge(String fn, String tn, double weight) {
@@ -106,6 +90,21 @@ public class CrossTimeGraph {
         Edge e = new Edge(f, t, weight);
         allEdges.add(e);
         f.addOutEdge(e);
+    }
+
+    /**
+     * addSourceVertex should be called after all edges are added.
+     * @param vn
+     */
+    public void addSourceVertex(String vn) {
+        Vertex v;
+        if (! allVertices.containsKey(vn))
+            v = new Vertex(vn, allVertices.size());
+        else
+            v = allVertices.get(vn);
+
+        sourceVertices.add(v);
+        sourceWeightSum += v.outDegree;
     }
 
     public List<String> sampleVertexSequence() {
@@ -130,51 +129,6 @@ public class CrossTimeGraph {
         return seq;
     }
 
-
-    /**
-     * Output the sample sequence (24 nodes each line)
-     * For Deepwalk training.
-     */
-    public static void outputSampleSequence() {
-        Tracts trts = new Tracts();
-        trts.mapTripsIntoTracts();
-
-        CrossTimeGraph g = new CrossTimeGraph();
-        for (int h = 0; h < 24; h++) {
-            for (Tract src : trts.tracts.values()) {
-                for (Tract dst : trts.tracts.values()) {
-                    int w = src.getFlowTo(dst.id, h);
-                    if (w > 0)
-                        g.addEdge(String.format("%d-%d", h, src.id),
-                                String.format("%d-%d", (h+1)%24, dst.id), w);
-                }
-            }
-        }
-        for (Tract src : trts.tracts.values()) {
-            String srcn = String.format("%d-%d", 0, src.id);
-            if (g.allVertices.containsKey(srcn))
-                g.addSourceVertex(srcn);
-        }
-        System.out.println(g.sourceVertices.size());
-
-        try {
-            BufferedWriter fout = new BufferedWriter(new FileWriter("../miscs/taxi-crosstime.seq"));
-            for (int i = 0; i < 512_000_000; i ++) {
-                List<String> seq = g.sampleVertexSequence();
-                String line = String.join(" ", seq);
-                fout.write(line + "\n");
-                if (i % 5_120000 == 0)
-                    System.out.format("%d%% finished", i / 5120000);
-            }
-            fout.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public static void main(String[] argv) {
-        outputSampleSequence();
-    }
 }
 
 
