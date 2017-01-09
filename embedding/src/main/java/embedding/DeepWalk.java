@@ -4,9 +4,12 @@ import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
-import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
+//import org.nd4j.jita.conf.CudaEnvironment;
+import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
+//import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,6 +24,19 @@ public class DeepWalk {
     private static Logger log = LoggerFactory.getLogger(DeepWalk.class);
 
     public static void learnEmbedding() throws Exception{
+//        DataTypeUtil.setDTypeForContext(DataBuffer.Type.HALF);
+//        Nd4j.create(32);
+//
+//        CudaEnvironment.getInstance().getConfiguration()
+//                // key option enabled
+//                .allowMultiGPU(false)
+//
+//                // we're allowing larger memory caches
+//                .setMaximumDeviceCache(4L * 1024L * 1024L * 1024L)
+//
+//                // cross-device access is used for faster model averaging over pcie
+//                .allowCrossDeviceAccess(false);
+
         String filePath = new File("../miscs/taxi-crosstime-fifth.seq").getAbsolutePath();
 
         log.info("Load and vectorize");
