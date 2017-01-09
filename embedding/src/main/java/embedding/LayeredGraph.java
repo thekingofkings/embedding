@@ -15,6 +15,53 @@ import java.util.Random;
  * Created by kok on 1/2/17.
  */
 public class CrossTimeGraph {
+
+    public static Random rnd = new Random();
+
+    class Edge {
+        public Vertex from;
+        public Vertex to;
+        public double weight;
+
+        public Edge(Vertex f, Vertex t, double w) {
+            from = t;
+            to = t;
+            weight = w;
+        }
+    }
+
+    class Vertex {
+
+        public String name;
+        public int id;
+        public List<Edge> edgesOut;
+        public double outDegree;
+
+        public Vertex(String n, int i) {
+            name = n;
+            id = i;
+            edgesOut = new LinkedList<>();
+            outDegree = 0;
+        }
+
+        public void addOutEdge(Edge e) {
+            edgesOut.add(e);
+            outDegree += e.weight;
+        }
+
+        public Vertex sampleNextVertex() {
+            double s = rnd.nextDouble() * outDegree;
+            double cnt = 0;
+            for (Edge e : edgesOut) {
+                cnt += e.weight;
+                if (cnt >= s)
+                    return e.to;
+            }
+            return null;
+        }
+    }
+
+
     public List<Edge> allEdges;
     public Map<String, Vertex> allVertices;
     public List<Vertex> sourceVertices;
@@ -62,7 +109,7 @@ public class CrossTimeGraph {
     }
 
     public List<String> sampleVertexSequence() {
-        double s = Vertex.rnd.nextDouble() * sourceWeightSum;
+        double s = rnd.nextDouble() * sourceWeightSum;
         LinkedList<String> seq = new LinkedList<>();
 
         double cnt = 0;
@@ -131,45 +178,3 @@ public class CrossTimeGraph {
 }
 
 
-class Edge {
-    public Vertex from;
-    public Vertex to;
-    public double weight;
-
-    public Edge(Vertex f, Vertex t, double w) {
-        from = t;
-        to = t;
-        weight = w;
-    }
-}
-class Vertex {
-    public static Random rnd = new Random();
-
-    public String name;
-    public int id;
-    public List<Edge> edgesOut;
-    public double outDegree;
-
-    public Vertex(String n, int i) {
-        name = n;
-        id = i;
-        edgesOut = new LinkedList<>();
-        outDegree = 0;
-    }
-
-    public void addOutEdge(Edge e) {
-        edgesOut.add(e);
-        outDegree += e.weight;
-    }
-
-    public Vertex sampleNextVertex() {
-        double s = rnd.nextDouble() * outDegree;
-        double cnt = 0;
-        for (Edge e : edgesOut) {
-            cnt += e.weight;
-            if (cnt >= s)
-                return e.to;
-        }
-        return null;
-    }
-}

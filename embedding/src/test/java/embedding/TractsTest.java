@@ -1,6 +1,9 @@
 package embedding;
 
+import com.vividsolutions.jts.geom.Coordinate;
+import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.MultiPolygon;
+import com.vividsolutions.jts.geom.Polygon;
 import junit.framework.TestCase;
 import org.geotools.data.simple.SimpleFeatureIterator;
 import org.opengis.feature.simple.SimpleFeature;
@@ -55,6 +58,30 @@ public class TractsTest extends TestCase {
         assertEquals((int) sortedIds.get(0), 10100);
         assertEquals((int) sortedIds.get(800), 980100);
         assertTrue(sortedIds.get(0) < sortedIds.get(800));
+    }
+
+    public void testTractCentroidDistance() {
+        GeometryFactory gf = new GeometryFactory();
+
+        Coordinate[] coords1 = new Coordinate[]{
+                new Coordinate(0, 0), new Coordinate(2, 0), new Coordinate(2,2),
+                new Coordinate(0, 2), new Coordinate(0, 0)
+        };
+        MultiPolygon mp1 = gf.createMultiPolygon(new Polygon[] {gf.createPolygon(coords1)});
+        Tract t1 = new Tract(1, mp1);
+        assertEquals(t1.getCentroid().getX(), 1.0);
+        assertEquals(t1.getCentroid().getY(), 1.0);
+
+        Coordinate[] coords2 = new Coordinate[]{
+                new Coordinate(0, 10), new Coordinate(2, 10), new Coordinate(2,12),
+                new Coordinate(0, 12), new Coordinate(0, 10)
+        };
+        MultiPolygon mp2 = gf.createMultiPolygon(new Polygon[] {gf.createPolygon(coords2)});
+        Tract t2 = new Tract(2, mp2);
+        assertEquals(t2.getCentroid().getX(), 1.0);
+        assertEquals(t2.getCentroid().getY(), 11.0);
+
+        assertEquals(t1.distanceTo(t2), 10.0);
     }
 
 }

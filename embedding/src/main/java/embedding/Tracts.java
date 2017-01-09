@@ -2,6 +2,7 @@ package embedding;
 
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.MultiPolygon;
+import com.vividsolutions.jts.geom.Point;
 import org.geotools.data.shapefile.ShapefileDataStore;
 import org.geotools.data.simple.SimpleFeatureIterator;
 import org.opengis.feature.simple.SimpleFeature;
@@ -414,5 +415,20 @@ class Tract {
         for (int h = hourLow; h <= hourHigh; h++)
             cnt += taxiFlows.get(h).getOrDefault(dstId, 0);
         return cnt;
+    }
+
+    public Point getCentroid() {
+        return this.boundary.getCentroid();
+    }
+
+    /**
+     * The centroid distance to another tract's centroid.
+     * @param o the other tract
+     * @return the Euclidean distance of two GPS.
+     */
+    public double distanceTo(Tract o) {
+        Point tc = this.getCentroid();
+        Point oc = o.getCentroid();
+        return tc.distance(oc);
     }
 }
