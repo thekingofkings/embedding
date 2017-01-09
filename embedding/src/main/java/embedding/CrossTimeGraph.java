@@ -12,8 +12,8 @@ import java.util.List;
  */
 public class CrossTimeGraph extends LayeredGraph {
 
-    public static int numLayer = 8;
     public static int numSamples = 50_000_000;
+    public static int numLayer = LayeredGraph.numLayer;
 
     public CrossTimeGraph() {
         super();
@@ -32,7 +32,7 @@ public class CrossTimeGraph extends LayeredGraph {
         System.out.println("Start generating cross-time graph...");
         int timeStep = 24 / numLayer;
         LayeredGraph g = new LayeredGraph();
-        for (int h = 0; h < numLayer; h += timeStep) {
+        for (int h = 0; h < numLayer; h++) {
             for (Tract src : trts.tracts.values()) {
                 for (Tract dst : trts.tracts.values()) {
                     int w = src.getFlowTo(dst.id, h, h+timeStep-1);
@@ -47,6 +47,7 @@ public class CrossTimeGraph extends LayeredGraph {
             if (g.allVertices.containsKey(srcn))
                 g.addSourceVertex(srcn);
         }
+        g.initiateAliasTables();
         long t2 = System.currentTimeMillis();
         System.out.format("Cross-time graph built successfully in %d milliseconds.\nStarting sequence sampling...\n",
                 t2-t1);
