@@ -115,6 +115,15 @@
               </arguments>
             </configuration>
           </execution>
+          <execution>
+            <id>deepwalk</id>
+            <goals>
+              <goal>java</goal>
+            </goals>
+            <configuration>
+              <mainClass>embedding.DeepWalk</mainClass>
+            </configuration>
+          </execution>
         </executions>
       </plugin>
     </plugins>

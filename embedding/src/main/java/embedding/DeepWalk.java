@@ -37,7 +37,7 @@ public class DeepWalk {
 //                // cross-device access is used for faster model averaging over pcie
 //                .allowCrossDeviceAccess(false);
 
-        String filePath = new File("../miscs/taxi-crosstime-fifth.seq").getAbsolutePath();
+        String filePath = new File("../miscs/taxi-crosstime.seq").getAbsolutePath();
 
         log.info("Load and vectorize");
         SentenceIterator itr = new BasicLineIterator(filePath);
