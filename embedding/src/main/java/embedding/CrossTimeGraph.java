@@ -31,7 +31,7 @@ public class CrossTimeGraph extends LayeredGraph {
         long t1 = System.currentTimeMillis();
         System.out.println("Start generating cross-time graph...");
         int timeStep = 24 / numLayer;
-        LayeredGraph g = new LayeredGraph();
+        CrossTimeGraph g = new CrossTimeGraph();
         for (int h = 0; h < numLayer; h++) {
             for (Tract src : trts.tracts.values()) {
                 for (Tract dst : trts.tracts.values()) {
