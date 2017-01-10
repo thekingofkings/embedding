@@ -17,6 +17,9 @@ import matplotlib.pyplot as plt
 from scipy.spatial.distance import cosine
 
 
+numLayer = 8
+
+
 def generatePOIlabel_helper(ordKey, tract_poi, poi_type):
     poi_cnt = []
     cnt = 0
@@ -104,7 +107,7 @@ def retrieveEmbeddingFeatures():
     """
     embedF = []
     embedRid = []
-    for h in range(24):
+    for h in range(numLayer):
         t = np.genfromtxt("../miscs/taxi-h{0}.vec".format(h), delimiter=" ", skip_header=1)
         embedRid.append(t[:,0].astype(int))
         t = t[:, 1:]
@@ -261,7 +264,7 @@ def evalute_by_pairwise_similarity():
     ACC2 = []
     ACC3 = []
     plt.figure()
-    for h in range(24):
+    for h in range(numLayer):
         
         pe_embed = pairwiseEstimator(embedFeatures[h], embedRid[h])
         pe_cie = pairwiseEstimator(crossInterEmbeds[h], ciRids[h])
@@ -297,7 +300,7 @@ def casestudy_pairwise_similarity():
 
     embedFeatures, embedRid = retrieveEmbeddingFeatures()
     
-    for h in range(24):
+    for h in range(numLayer):
         print "Hour:", h
         pe_embed = pairwiseEstimator(embedFeatures[h], embedRid[h])
         pe_mf = pairwiseEstimator(nmfeatures[h], nmRid[h])

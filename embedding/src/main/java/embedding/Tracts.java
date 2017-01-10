@@ -18,6 +18,7 @@ import java.util.stream.Stream;
 public class Tracts {
     public static final String shapeFilePath = "../data/Census-Tracts-2010/chicago-tract.shp";
     public static ShapefileDataStore shapefile;
+    public static int numTimeSlot = 8;
 
     public AbstractMap<Integer, Tract> tracts;
 
@@ -185,21 +186,22 @@ public class Tracts {
 
     /**
      * =====================================================
-     * Build hourly taxi flow graphs and output them
+     * Build time-slotted taxi flow graphs and output them
      * =====================================================
      */
 
     /**
      * Output the taxi flow as edge file, namely, each row is an edge, (src, dst, weight). The edge graph is constructed
-     * hour by hour independently, and there will be 24 edge graphs.
+     * timeslot by timeslot independently, and there will be {@link Tracts#numTimeSlot} edge graphs.
      */
     public void outputEdgeFile() {
         try {
-            for (int h = 0; h < 24; h++) {
+            int timeStep = 24 / numTimeSlot;
+            for (int h = 0; h < numTimeSlot; h++) {
                 BufferedWriter fout = new BufferedWriter(new FileWriter(String.format("../miscs/taxi-h%d.od", h)));
                 for (Tract t : tracts.values()) {
                     for (int dst : t.taxiFlows.get(h).keySet()) {
-                        int w = t.getFlowTo(dst, h);
+                        int w = t.getFlowTo(dst, h, h+timeStep-1);
                         if (w > 0)
                             fout.write(String.format("%d %d %d\n", t.id, dst, w));
                     }
@@ -227,14 +229,15 @@ public class Tracts {
      */
     public void outputAdjacencyMatrix() {
         try {
-            for (int h = 0; h < 24; h++) {
+            int timeStep = 24 / numTimeSlot;
+            for (int h = 0; h < numTimeSlot; h++) {
                 BufferedWriter fout = new BufferedWriter(new FileWriter(String.format("../miscs/taxi-h%d.matrix", h)));
                 List<Integer> sortedId = new LinkedList<>(tracts.keySet());
                 sortedId.sort((a,b) -> a.compareTo(b));
                 for (int src : sortedId) {
                     List<String> row = new LinkedList<>();
                     for (int dst : sortedId) {
-                        row.add(Integer.toString(tracts.get(src).getFlowTo(dst, h)));
+                        row.add(Integer.toString(tracts.get(src).getFlowTo(dst, h, h+timeStep-1)));
                     }
                     String line = String.join(",", row) + "\n";
                     fout.write(line);
@@ -276,7 +279,7 @@ public class Tracts {
         Tracts trts = new Tracts();
         trts.mapTripsIntoTracts();
         trts.outputEdgeFile();  // for graph embedding LINE
-        //trts.outputAdjacencyMatrix();   // for matrix factorization
+        trts.outputAdjacencyMatrix();   // for matrix factorization
         //trts.outputEdgeGraph_crossInterval();
     }
 

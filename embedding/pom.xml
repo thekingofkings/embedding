@@ -116,6 +116,18 @@
             </configuration>
           </execution>
           <execution>
+            <id>edge-file</id>
+            <goals>
+              <goal>java</goal>
+            </goals>
+            <configuration>
+              <mainClass>embedding.Tracts</mainClass>
+              <arguments>
+                <argument>edge-file</argument>
+              </arguments>
+            </configuration>
+          </execution>
+          <execution>
             <id>deepwalk</id>
             <goals>
               <goal>java</goal>
