@@ -39,7 +39,7 @@ public class LayeredGraph {
         public Vertex(String n, int i) {
             name = n;
             id = i;
-            edgesOut = new LinkedList<>();
+            edgesOut = new ArrayList<>();
             outDegree = 0;
         }
 
@@ -148,9 +148,9 @@ public class LayeredGraph {
     protected int[] aliasTable;
 
     public LayeredGraph() {
-        allEdges = new LinkedList<>();
+        allEdges = new ArrayList<>();
         allVertices = new HashMap<>();
-        sourceVertices = new LinkedList<>();
+        sourceVertices = new ArrayList<>();
         sourceWeightSum = 0;
     }
 

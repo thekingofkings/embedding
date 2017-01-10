@@ -3,6 +3,7 @@ package embedding;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -13,14 +14,28 @@ import java.util.List;
  */
 public class SpatialGraph extends LayeredGraph {
 
-    public static int numSamples = 50_000_000;
+    public static int numSamples = 1_000_000;
     public static int numLayer = LayeredGraph.numLayer;
 
     public SpatialGraph() {
         super();
     }
 
-    public static void outputSampleSequence() {
+    /**
+     * Only keep the top k neighboring vertices.
+     * This should be called after adding all edges, and
+     * before initializing source vertex and alias table.
+     * @param k
+     */
+    public void keepNearestKVertices(int k) {
+        for (Vertex v : allVertices.values()) {
+            v.edgesOut.sort((v1, v2) -> - Double.compare(v1.weight, v2.weight));
+            v.edgesOut = v.edgesOut.subList(0, k);
+            v.outDegree = v.edgesOut.stream().mapToDouble(a -> a.weight).sum();
+        }
+    }
+
+    public static SpatialGraph constructGraph() {
         Tracts trts = new Tracts();
 
         long t1 = System.currentTimeMillis();
@@ -30,20 +45,30 @@ public class SpatialGraph extends LayeredGraph {
         for (Tract src : trts.tracts.values()) {
             for (Tract dst : trts.tracts.values()) {
                 double d = src.distanceTo(dst);
-                double w = Math.exp(-d);
+                double w = Math.exp(-d * 100);
                 g.addEdge(Integer.toString(src.id), Integer.toString(dst.id), w);
             }
         }
+
+        /**
+         * Only keep the nearest 10 tracts to address issue (#4)
+         */
+        g.keepNearestKVertices(10);
 
         g.sourceVertices = new LinkedList<>(g.allVertices.values());
         g.sourceWeightSum = g.sourceVertices.stream().mapToDouble(x -> x.outDegree).sum();
         g.initiateAliasTables();
         long t2 = System.currentTimeMillis();
-        System.out.format("Spatial graph built successfully in %d milliseconds.\nStarting sequence sampling...\n",
-                t2-t1);
+        System.out.format("Spatial graph built successfully in %d milliseconds.\n", t2-t1);
+        return g;
+    }
 
+    public static void outputSampleSequence() {
+        SpatialGraph g = constructGraph();
+        long t2 = System.currentTimeMillis();
+        System.out.println("Starting sequence sampling...");
         try {
-            BufferedWriter fout = new BufferedWriter(new FileWriter("../miscs/taxi-crosstime.seq", true));
+            BufferedWriter fout = new BufferedWriter(new FileWriter("../miscs/deepwalkseq/taxi-spatial.seq"));
             for (int i = 0; i < numSamples; i++) {
                 List<String> seq = g.sampleVertexSequence();
                 for (int j = 0; j < seq.size(); j++) {

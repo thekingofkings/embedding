@@ -12,7 +12,7 @@ import java.util.List;
  */
 public class CrossTimeGraph extends LayeredGraph {
 
-    public static int numSamples = 50_000_000;
+    public static int numSamples = 7_000_000;
     public static int numLayer = LayeredGraph.numLayer;
 
     public CrossTimeGraph() {
@@ -53,7 +53,7 @@ public class CrossTimeGraph extends LayeredGraph {
                 t2-t1);
 
         try {
-            BufferedWriter fout = new BufferedWriter(new FileWriter("../miscs/taxi-crosstime.seq"));
+            BufferedWriter fout = new BufferedWriter(new FileWriter("../miscs/deepwalkseq/taxi-crosstime.seq"));
             for (int i = 0; i < numSamples; i ++) {
                 List<String> seq = g.sampleVertexSequence();
                 String line = String.join(" ", seq);

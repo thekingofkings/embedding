@@ -134,6 +134,7 @@
             </goals>
             <configuration>
               <mainClass>embedding.DeepWalk</mainClass>
+              <cleanupDaemonThreads>false</cleanupDaemonThreads>
             </configuration>
           </execution>
         </executions>
