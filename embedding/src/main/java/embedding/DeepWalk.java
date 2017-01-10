@@ -70,9 +70,10 @@ public class DeepWalk {
 
     public static void main(String[] argv) {
         try {
-            if (argv.length > 1 && argv[0].equals("nospatial"))
+            if (argv.length > 0 && argv[0].equals("nospatial")) {
+                System.out.println("word2vec use only Crosstime graph.");
                 learnEmbedding(false);
-            else
+            } else
                 learnEmbedding();
         } catch (Exception e) {
             e.printStackTrace();

@@ -12,6 +12,7 @@ import pickle
 import numpy as np
 import nimfa
 
+numTimeSlot = 8
 
 def getSortedId():
     with open("../miscs/POI_tract.pickle") as fin:
@@ -46,7 +47,7 @@ def NMFfeatures(h):
 if __name__ == '__main__':
     nmfeatures = []
     regionIDs = []
-    for h in range(24):
+    for h in range(numTimeSlot):
         f, tid = NMFfeatures(h)
         nmfeatures.append(f)
         regionIDs.append(tid)

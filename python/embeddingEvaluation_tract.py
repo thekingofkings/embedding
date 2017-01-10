@@ -251,39 +251,50 @@ def evalute_by_pairwise_similarity():
         nmfeatures = pickle.load(fin2)
         nmRid = pickle.load(fin2)
         
+    
+    pair_gnd = generatePairWiseGT(ordKey, tract_poi)
+        
     embedFeatures, embedRid = retrieveEmbeddingFeatures()
-    crossInterEmbeds, ciRids = retrieveCrossIntervalEmbeddings("../miscs/taxi-deepwalk.vec", skipheader=0)
+    crosstimeFeatures, cteRid = retrieveCrossIntervalEmbeddings("../miscs/taxi-deepwalk-nospatial.vec", skipheader=0)
+    twoGraphEmbeds, twoGRids = retrieveCrossIntervalEmbeddings("../miscs/taxi-deepwalk.vec", skipheader=0)
     
     features, rid = retrieveEmbeddingFeatures_helper("../miscs/taxi-all.vec")
     pe_all_embed = pairwiseEstimator(features, rid)
-    pair_gnd = generatePairWiseGT(rid, tract_poi)
     acc = topK_accuracy(20, pe_all_embed, pair_gnd)
     print "Acc of static graph", acc
     
     ACC1 = []
     ACC2 = []
     ACC3 = []
+    ACC4 = []
     plt.figure()
     for h in range(numLayer):
         
         pe_embed = pairwiseEstimator(embedFeatures[h], embedRid[h])
-        pe_cie = pairwiseEstimator(crossInterEmbeds[h], ciRids[h])
         pe_mf = pairwiseEstimator(nmfeatures[h], nmRid[h])
-        pair_gnd = generatePairWiseGT(embedRid[h], tract_poi)
+        pe_cte = pairwiseEstimator(crosstimeFeatures[h], cteRid[h])
+        pe_twoG = pairwiseEstimator(twoGraphEmbeds[h], twoGRids[h])
+        
+        cov1 = len(embedRid[h]) / float(len(ordKey))
+        cov2 = len(nmRid[h]) / float(len(ordKey))
+        cov3 = len(cteRid[h]) / float(len(ordKey))
+        cov4 = len(twoGRids[h]) / float(len(ordKey))
         
         acc1 = topK_accuracy(20, pe_embed, pair_gnd)
         acc2 = topK_accuracy(20, pe_mf, pair_gnd)
+        acc3 = topK_accuracy(20, pe_cte, pair_gnd)
+        acc4 = topK_accuracy(20, pe_twoG, pair_gnd)
         
-        pair_gnd = generatePairWiseGT(ciRids[h], tract_poi)
-        acc3 = topK_accuracy(20, pe_cie, pair_gnd)
         ACC1.append(acc1)
         ACC2.append(acc2)
         ACC3.append(acc3)
-        print h, acc1, acc2, acc3
+        ACC4.append(acc4)
+        print h, cov1, acc1, cov2, acc2, cov3, acc3, cov4, acc4
     plt.plot(ACC1)
     plt.plot(ACC2)
     plt.plot(ACC3)
-    plt.legend(["Embedding", "MF", "CrossInterval"], loc='best')
+    plt.plot(ACC4)
+    plt.legend(["Embedding", "MF", "CrossTime", "CT+Spatial"], loc='best')
     
         
         
