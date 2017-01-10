@@ -13,6 +13,7 @@
     <geotools.version>15.1</geotools.version>
     <nd4j.version>0.7.2</nd4j.version>
     <dl4j.version>0.7.2</dl4j.version>
+    <nd4j.backend>nd4j-native-platform</nd4j.backend>
   </properties>
 
   <dependencies>
@@ -48,6 +49,13 @@
       <artifactId>nd4j-native</artifactId>
       <version>${nd4j.version}</version>
     </dependency>
+    <!--
+    <dependency>
+      <groupId>org.nd4j</groupId>
+      <artifactId>nd4j-cuda-7.5-platform</artifactId>
+      <version>${nd4j.version}</version>
+    </dependency>
+    -->
   </dependencies>
 
   <repositories>
