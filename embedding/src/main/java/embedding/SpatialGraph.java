@@ -3,7 +3,6 @@ package embedding;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -35,12 +34,11 @@ public class SpatialGraph extends LayeredGraph {
         }
     }
 
-    public static SpatialGraph constructGraph() {
+    public static SpatialGraph constructGraph_tract() {
         Tracts trts = new Tracts();
 
         long t1 = System.currentTimeMillis();
         System.out.println("Start generating spatial graph ...");
-        int timeStep = 24 / numLayer;
         SpatialGraph g = new SpatialGraph();
         for (Tract src : trts.tracts.values()) {
             for (Tract dst : trts.tracts.values()) {
@@ -63,12 +61,45 @@ public class SpatialGraph extends LayeredGraph {
         return g;
     }
 
-    public static void outputSampleSequence() {
-        SpatialGraph g = constructGraph();
+
+    public static SpatialGraph constructGraph_CA() {
+        CommunityAreas cas = new CommunityAreas();
+
+        long t1 = System.currentTimeMillis();
+        System.out.println("Start generating spatial graph for communities ... ");
+        SpatialGraph g = new SpatialGraph();
+        for (CommunityArea src : cas.communities.values()) {
+            for (CommunityArea dst : cas.communities.values()) {
+                double d = src.distanceTo(dst);
+                double w = Math.exp(-d * 100);
+                g.addEdge(Integer.toString(src.id), Integer.toString(dst.id), w);
+            }
+        }
+
+        g.keepNearestKVertices(6);
+
+        g.sourceVertices = new LinkedList<>((g.allVertices.values()));
+        g.sourceWeightSum = g.sourceVertices.stream().mapToDouble(v -> v.outDegree).sum();
+        g.initiateAliasTables();
+
+        long t2 = System.currentTimeMillis();
+        System.out.format("Spatial graph for community built successfully in %d milliseconds.\n", t2-t1);
+        return g;
+    }
+
+
+    public static void outputSampleSequence(String regionLevel) {
+        LayeredGraph.numLayer = SpatialGraph.numLayer;
+        SpatialGraph g;
+        if (regionLevel.equals("tract"))
+            g = constructGraph_tract();
+        else // if (regionLevel.equals("CA"))
+            g = constructGraph_CA();
         long t2 = System.currentTimeMillis();
         System.out.println("Starting sequence sampling...");
         try {
-            BufferedWriter fout = new BufferedWriter(new FileWriter("../miscs/deepwalkseq/taxi-spatial.seq"));
+            BufferedWriter fout = new BufferedWriter(new FileWriter(String.format("../miscs/deepwalkseq-%s/taxi-spatial.seq",
+                    regionLevel)));
             for (int i = 0; i < numSamples; i++) {
                 List<String> seq = g.sampleVertexSequence();
                 for (int j = 0; j < seq.size(); j++) {
@@ -90,6 +121,8 @@ public class SpatialGraph extends LayeredGraph {
     }
 
     public static void main(String[] argv) {
-        outputSampleSequence();
+        numLayer = 24;
+        numSamples = 80_000; // number of nodes * 1000
+        outputSampleSequence("CA");
     }
 }

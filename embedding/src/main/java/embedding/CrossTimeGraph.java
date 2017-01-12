@@ -1,5 +1,7 @@
 package embedding;
 
+import com.vividsolutions.jts.awt.PointShapeFactory;
+
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -19,12 +21,7 @@ public class CrossTimeGraph extends LayeredGraph {
         super();
     }
 
-
-    /**
-     * Output the sample sequence ({@link CrossTimeGraph#numLayer} nodes each line)
-     * For Deepwalk training.
-     */
-    public static void outputSampleSequence() {
+    public static CrossTimeGraph constructGraph_tract() {
         Tracts trts = new Tracts();
         trts.mapTripsIntoTracts();
 
@@ -47,13 +44,60 @@ public class CrossTimeGraph extends LayeredGraph {
             if (g.allVertices.containsKey(srcn))
                 g.addSourceVertex(srcn);
         }
+
+        long t2 = System.currentTimeMillis();
+        System.out.format("Cross-time graph built successfully in %d milliseconds.\n", t2-t1);
+        return g;
+    }
+
+    public static CrossTimeGraph constructGraph_CA() {
+        CommunityAreas cas = new CommunityAreas();
+        cas.mapTripsIntoCommunities();
+
+        long t1 = System.currentTimeMillis();
+        System.out.println("Start generating crosstime graph for Communities ...");
+        int timeStemp = 24/ numLayer;
+        CrossTimeGraph g = new CrossTimeGraph();
+        for (int h = 0; h < numLayer; h++) {
+            for (CommunityArea src : cas.communities.values()) {
+                for (CommunityArea dst : cas.communities.values()) {
+                    int w = src.getFlowTo(dst.id, h, h+timeStemp-1);
+                    if (w > 0)
+                        g.addEdge(String.format("%d-%d", h, src.id),
+                                String.format("%d-%d", h, dst.id), w);
+                }
+            }
+        }
+        for (CommunityArea ca : cas.communities.values()) {
+            String can = String.format("0-%d", ca.id);
+            if (g.allVertices.containsKey(can))
+                g.addSourceVertex(can);
+        }
+
+        long t2 = System.currentTimeMillis();
+        System.out.format("Crosstime graph for communities built successfully in %d milliseconds.\n", t2-t1);
+        return g;
+    }
+
+
+    /**
+     * Output the sample sequence ({@link CrossTimeGraph#numLayer} nodes each line)
+     * For Deepwalk training.
+     */
+    public static void outputSampleSequence(String regionLevel) {
+        LayeredGraph.numLayer = SpatialGraph.numLayer;
+        CrossTimeGraph g;
+        if (regionLevel.equals("tract"))
+            g = constructGraph_tract();
+        else// if (regionLevel.equals("CA"))
+            g = constructGraph_CA();
         g.initiateAliasTables();
         long t2 = System.currentTimeMillis();
-        System.out.format("Cross-time graph built successfully in %d milliseconds.\nStarting sequence sampling...\n",
-                t2-t1);
+        System.out.println("Starting sequence sampling...");
 
         try {
-            BufferedWriter fout = new BufferedWriter(new FileWriter("../miscs/deepwalkseq/taxi-crosstime.seq"));
+            BufferedWriter fout = new BufferedWriter(new FileWriter(String.format("../miscs/deepwalkseq-%s/taxi-crosstime.seq",
+                    regionLevel)));
             for (int i = 0; i < numSamples; i ++) {
                 List<String> seq = g.sampleVertexSequence();
                 String line = String.join(" ", seq);
@@ -71,7 +115,9 @@ public class CrossTimeGraph extends LayeredGraph {
     }
 
     public static void main(String[] argv) {
-        outputSampleSequence();
+        numSamples = 2_000_000; // number of nodes * 1000
+        numLayer = 24;
+        outputSampleSequence("CA");
     }
 
 }
