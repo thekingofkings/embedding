@@ -15,6 +15,15 @@ from sklearn import tree
 from sklearn.model_selection import cross_val_score
 import matplotlib.pyplot as plt
 from scipy.spatial.distance import cosine
+from sklearn.preprocessing import scale
+from sklearn.cluster import KMeans
+
+
+"""
+===========================================
+Pairwise similarity evaluation
+===========================================
+"""
 
 
 numLayer = 8
@@ -139,12 +148,9 @@ def retrieveCrossIntervalEmbeddings(fn="../miscs/taxi-crossInterval.vec", skiphe
             features[k1].append(f[i])
             rids[k1].append(k2)
     
-#    for h in embeddings:
-#        features[h] = []
-#        rids[h] = []
-#        for k, v in embeddings[h].items():
-#            rids[h].append(k)
-#            features[h].append(v)
+    for k in features.keys():
+        features[k] = np.array(features[k])
+        rids[k] = np.array(rids[k])
     
     return features, rids
 
@@ -247,7 +253,7 @@ def evalute_by_pairwise_similarity():
         ordKey = pickle.load(fin)
         tract_poi = pickle.load(fin)
     
-    with open("nmf-tract.pickle") as fin2:
+    with open("../miscs/nmf-tract.pickle") as fin2:
         nmfeatures = pickle.load(fin2)
         nmRid = pickle.load(fin2)
         
@@ -319,7 +325,110 @@ def casestudy_pairwise_similarity():
         topKcover_case(8, pe_embed, pair_gnd, pe_mf)
 
         
+"""
+===========================================
+Clustering evaluation with tweets
+===========================================
+"""
+
+def generateTweetsGNTlabel(nclusters):
+    tweets = np.loadtxt("../miscs/tweetsCount.txt", delimiter=" ")
+    tid = tweets[:,0]
+    features = tweets[:, 1:]
+#    features = scale(features)
+    
+    
+    cls = KMeans(n_clusters=nclusters)
+    res = cls.fit(features)
+    return tid, res.labels_
+    
+
+def clusteringAccuracy(features, tid, gndTid, gndLabels, nclusters):
+    cls = KMeans(n_clusters=nclusters)
+    res = cls.fit(features)
+    labels = res.labels_
+    
+    grp_cnt = np.zeros((nclusters, nclusters))
+    for i in range(nclusters):
+        idx_grp = np.argwhere(labels == i)
+        for t in tid[idx_grp]:
+            idx = np.argwhere(gndTid == t)
+            l = gndLabels[idx]
+            grp_cnt[i,l] += 1
+    
+    cnt_pos = 0
+    
+    total_samples = [np.sum(r) for r in grp_cnt]
+    grp_visit_order = np.argsort(total_samples)
+    grp_visit_order = grp_visit_order[::-1] # visit largest group first
+    
+    mapped_label = []
+    for grp_id in grp_visit_order:
+        gnd_label = np.argsort(grp_cnt[grp_id])[::-1]
+        mapto = -1
+        for gnd_l in gnd_label:
+            if gnd_l not in mapped_label:
+                mapto = gnd_l
+                mapped_label.append(gnd_l)
+                break
+#        print grp_id, mapto, gnd_label, grp_cnt[grp_id], grp_cnt[grp_id, mapto]
+        cnt_pos += grp_cnt[grp_id, mapto]
+    
+    
+    return cnt_pos / len(tid)     
+            
+
+def evaluate_by_clustering(numCluster = 3):
+    
+    with open("../miscs/nmf-tract.pickle") as fin2:
+        nmfeatures = pickle.load(fin2)
+        nmRid = pickle.load(fin2)
+    
+    gndTid, gndLabels = generateTweetsGNTlabel(numCluster)
+    for i in range(numCluster):
+        print i, np.argwhere(gndLabels==i).shape[0]
+    # test the static graph clustering    
+    features, rid = retrieveEmbeddingFeatures_helper("../miscs/taxi-all.vec")
+    accr = clusteringAccuracy(features, rid, gndTid, gndLabels, numCluster)
+    print accr
+    
+    
+    embedFeatures, embedRid = retrieveEmbeddingFeatures()
+    crosstimeFeatures, cteRid = retrieveCrossIntervalEmbeddings("../miscs/taxi-deepwalk-nospatial.vec", skipheader=0)
+    twoGraphEmbeds, twoGRids = retrieveCrossIntervalEmbeddings("../miscs/taxi-deepwalk.vec", skipheader=0)
+    
+    ACC1 = []
+    ACC2 = []
+    ACC3 = []
+    ACC4 = []
+    for h in range(numLayer):
+        # MF
+        acc1 = clusteringAccuracy(nmfeatures[h], nmRid[h], gndTid, gndLabels, numCluster)
+        cov1 = len(nmRid[h]) / float(len(gndTid))
+        # LINE on time-slotted graph
+        acc2 = clusteringAccuracy(embedFeatures[h], embedRid[h], gndTid, gndLabels, numCluster)
+        cov2 = len(embedRid[h]) / float(len(gndTid))
+        # word2vec on crosstime graph only
+        acc3 = clusteringAccuracy(crosstimeFeatures[h], cteRid[h], gndTid, gndLabels, numCluster)
+        cov3 = len(cteRid[h]) / float(len(gndTid))
+        # word2vec on crosstime graph + spatial graph jointly
+        acc4 = clusteringAccuracy(twoGraphEmbeds[h], twoGRids[h], gndTid, gndLabels, numCluster)
+        cov4 = len(twoGRids[h]) / float(len(gndTid))
         
+        print h, cov1, acc1, cov2, acc2, cov3, acc3, cov4, acc4
+        ACC1.append(acc1)
+        ACC2.append(acc2)
+        ACC3.append(acc3)
+        ACC4.append(acc4)
+    
+    plt.figure()
+    plt.plot(ACC1)
+    plt.plot(ACC2)
+    plt.plot(ACC3)
+    plt.plot(ACC4)
+    plt.legend(["MF", "LINE", "CrossTime", "CT+Spatial"], loc='best')
+    
+     
     
     
     
@@ -332,6 +441,8 @@ if __name__ == '__main__':
             evalute_by_pairwise_similarity()
         elif sys.argv[1] == "pairwise-case":
             casestudy_pairwise_similarity()
+        elif sys.argv[1] == "cluster-eval":
+            evaluate_by_clustering()
         else:
             print "wrong parameter"
     else:
