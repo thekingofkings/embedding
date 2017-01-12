@@ -9,7 +9,7 @@ import java.util.Arrays;
  */
 public class SpatialGraphTest extends TestCase {
     public void testKeepNearestKVertices() throws Exception {
-        SpatialGraph g = SpatialGraph.constructGraph();
+        SpatialGraph g = SpatialGraph.constructGraph_tract();
         g.keepNearestKVertices(10);
         LayeredGraph.Vertex v = g.allVertices.get("63302");
         v.edgesOut.sort((v1, v2) -> - Double.compare(v1.weight, v2.weight));

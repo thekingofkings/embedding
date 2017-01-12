@@ -2,6 +2,7 @@ package embedding;
 
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.MultiPolygon;
+import com.vividsolutions.jts.geom.Point;
 import org.geotools.data.shapefile.ShapefileDataStore;
 import org.geotools.data.simple.SimpleFeatureIterator;
 import org.opengis.feature.simple.SimpleFeature;
@@ -17,8 +18,6 @@ import java.util.stream.Collectors;
  */
 public class CommunityAreas
 {
-    static String dataFolder = "../data";
-
     /**
      * There are 10 fields for each SimpleFeature samples in this shapefile.
      * We will only use the following three:
@@ -26,7 +25,7 @@ public class CommunityAreas
      *      2. AREA_NUMBE (id: int)
      *      3. COMMUNITY (name: string)
      */
-    public static final String shapeFilePath = "../data/ChiCA_gps/ChiCaGPS.shp";
+    static final String shapeFilePath = "../data/ChiCA_gps/ChiCaGPS.shp";
 
     public AbstractMap<Integer, CommunityArea> communities;
 
@@ -67,8 +66,9 @@ public class CommunityAreas
                 if (ca.boundary.contains(t.endLoc))
                     e = ca;
                 if (s != null && e != null) {
-                    int curCount = s.taxiFlows.get(e.id-1);
-                    s.taxiFlows.set(e.id-1, curCount+1);
+                    int hour = t.startDate.hour;
+                    int curCount = s.getFlowTo(e.id, hour);
+                    s.taxiFlows.get(hour).put(e.id, curCount+1);
                     break;
                 }
             }
@@ -76,19 +76,22 @@ public class CommunityAreas
 
         long t2 = System.currentTimeMillis();
         System.out.format("Map trips into communities finished in %s seconds.\n", (t2-t1)/1000);
-        saveTaxiFlowMatrix();
     }
 
-    private void saveTaxiFlowMatrix() {
+    private void outputAdjacencyMatrix() {
         try {
-            BufferedWriter fout = new BufferedWriter(new FileWriter("taxiFlow.csv"));
-            for (int i = 1; i <= communities.size(); i++) {
-                List<Integer> flows = communities.get(i).taxiFlows;
-                List<String> flowStr = flows.stream().map(x -> x.toString()).collect(Collectors.toList());
-                String line = flowStr.stream().collect(Collectors.joining(","));
-                fout.write(line + "\n");
+            for (int hour = 0; hour < 24; hour ++) {
+                BufferedWriter fout = new BufferedWriter(new FileWriter(String.format("../miscs/taxi-CA-h%d.matrix", hour)));
+                for (int i = 1; i <= communities.size(); i++) {
+                    List<String> row = new LinkedList<>();
+                    for (int j = 1; j <= communities.size(); j++) {
+                        row.add(Integer.toString(communities.get(i).getFlowTo(j, hour)));
+                    }
+                    String line = String.join(" ", row);
+                    fout.write(line + "\n");
+                }
+                fout.close();
             }
-            fout.close();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -97,15 +100,17 @@ public class CommunityAreas
     /**
      * Generate edge graph for LINE embedding learning
      */
-    public void generateLINEtaxiOD() {
+    public void outputEdgeGraph_LINE() {
         try {
-            BufferedWriter fout = new BufferedWriter(new FileWriter("taxiOD.csv"));
-            for (int i = 1; i <= communities.size(); i++) {
-                for (int j = 0; j < 77; j++) {
-                    fout.write(String.format("%d %d %d\n", i, j+1, communities.get(i).taxiFlows.get(j)));
+            for (int hour = 0; hour < 24; hour++) {
+                BufferedWriter fout = new BufferedWriter(new FileWriter(String.format("../miscs/taxi-CA-h%d.od", hour)));
+                for (int i = 1; i <= communities.size(); i++) {
+                    for (int j = 1; j < communities.size(); j++) {
+                        fout.write(String.format("%d %d %d\n", i, j, communities.get(i).getFlowTo(j, hour)));
+                    }
                 }
+                fout.close();
             }
-            fout.close();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -116,7 +121,8 @@ public class CommunityAreas
     {
         CommunityAreas CAs = new CommunityAreas();
         CAs.mapTripsIntoCommunities();
-        CAs.generateLINEtaxiOD();
+        CAs.outputEdgeGraph_LINE();
+        CAs.outputAdjacencyMatrix();
     }
 }
 
@@ -125,20 +131,51 @@ class CommunityArea {
     int id;     // index start at 1
     String name;
     MultiPolygon boundary;
-    List<Integer> taxiFlows;
+    /**
+     * taxiFlows is a nested map.
+     * The index of the first layer is the hour of day (0-23)
+     * The key for the second layer is destination CA ID.
+     * The value is the flow from current CA to destination CA.
+     */
+    List<AbstractMap<Integer, Integer>> taxiFlows;
 
-    public CommunityArea(int id, String name, MultiPolygon boundary, int count) {
+    public CommunityArea(int id, String name, MultiPolygon boundary) {
         this.id = id;
         this.name = name;
         this.boundary = boundary;
-        this.taxiFlows = new ArrayList<>(Collections.nCopies(count, 0));
-    }
-
-    public CommunityArea(int id, String name, MultiPolygon boundary) {
-        this(id, name, boundary, 77);
+        this.taxiFlows = new ArrayList<>();
+        for (int i = 0; i < 24; i++) {
+            taxiFlows.add(new HashMap<>());
+        }
     }
 
     public Geometry getBoundary(){
         return this.boundary;
+    }
+
+    public int getFlowTo(int dstId, int hour) {
+        return taxiFlows.get(hour).getOrDefault(dstId, 0);
+    }
+
+    public int getFlowTo(int dstId, int hourLow, int hourHigh) {
+        int cnt = 0;
+        for (int h = hourLow; h <= hourHigh; h++)
+            cnt += taxiFlows.get(h).getOrDefault(dstId, 0);
+        return cnt;
+    }
+
+    public Point getCentroid() {
+        return this.boundary.getCentroid();
+    }
+
+    /**
+     * The centroid distance to another CA's centroid.
+     * @param o the other CA
+     * @return the Euclidean distance of two GPS.
+     */
+    public double distanceTo(CommunityArea o) {
+        Point tc = this.getCentroid();
+        Point oc = o.getCentroid();
+        return tc.distance(oc);
     }
 }
