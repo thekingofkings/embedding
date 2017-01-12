@@ -89,6 +89,7 @@ public class SpatialGraph extends LayeredGraph {
 
 
     public static void outputSampleSequence(String regionLevel) {
+        LayeredGraph.numLayer = SpatialGraph.numLayer;
         SpatialGraph g;
         if (regionLevel.equals("tract"))
             g = constructGraph_tract();

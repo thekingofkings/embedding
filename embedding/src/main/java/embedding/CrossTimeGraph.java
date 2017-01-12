@@ -85,6 +85,7 @@ public class CrossTimeGraph extends LayeredGraph {
      * For Deepwalk training.
      */
     public static void outputSampleSequence(String regionLevel) {
+        LayeredGraph.numLayer = SpatialGraph.numLayer;
         CrossTimeGraph g;
         if (regionLevel.equals("tract"))
             g = constructGraph_tract();
