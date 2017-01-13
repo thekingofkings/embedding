@@ -125,6 +125,7 @@ def retrieveEmbeddingFeatures():
     return embedF, embedRid
     
     
+    
 def retrieveCrossIntervalEmbeddings(fn="../miscs/taxi-crossInterval.vec", skipheader=1):
     t = np.genfromtxt(fn, delimiter=" ", skip_header=skipheader, dtype=None)
     tid = [row[0] for row in t]
@@ -217,8 +218,11 @@ def evalute_by_binary_classification():
     
 
 def topK_accuracy(k, estimator, pair_gnd):
+    """
+    Return the precision and recall with top k pairs.
+    """
     cnt = 0
-    total = len(estimator)
+    total = len(pair_gnd)
     for rid in estimator:
         knn = [estimator[rid][i][0] for i in range(k)]
         if len(np.intersect1d(pair_gnd[rid], knn)) != 0:
@@ -261,8 +265,8 @@ def evalute_by_pairwise_similarity():
     pair_gnd = generatePairWiseGT(ordKey, tract_poi)
         
     embedFeatures, embedRid = retrieveEmbeddingFeatures()
-    crosstimeFeatures, cteRid = retrieveCrossIntervalEmbeddings("../miscs/taxi-deepwalk-nospatial.vec", skipheader=0)
-    twoGraphEmbeds, twoGRids = retrieveCrossIntervalEmbeddings("../miscs/taxi-deepwalk.vec", skipheader=0)
+    crosstimeFeatures, cteRid = retrieveCrossIntervalEmbeddings("../miscs/taxi-deepwalk-tract-nospatial.vec", skipheader=0)
+    twoGraphEmbeds, twoGRids = retrieveCrossIntervalEmbeddings("../miscs/taxi-deepwalk-tract-usespatial.vec", skipheader=0)
     
     features, rid = retrieveEmbeddingFeatures_helper("../miscs/taxi-all.vec")
     pe_all_embed = pairwiseEstimator(features, rid)
@@ -331,7 +335,7 @@ Clustering evaluation with tweets
 ===========================================
 """
 
-def generateTweetsGNTlabel(nclusters):
+def generateTweetsClusteringlabel(nclusters):
     tweets = np.loadtxt("../miscs/tweetsCount.txt", delimiter=" ")
     tid = tweets[:,0]
     features = tweets[:, 1:]
@@ -341,6 +345,50 @@ def generateTweetsGNTlabel(nclusters):
     cls = KMeans(n_clusters=nclusters)
     res = cls.fit(features)
     return tid, res.labels_
+    
+
+
+def generatePOIClusteringlabel(nclusters):
+    with open("../miscs/POI_tract.pickle") as fin:
+        ordKey = pickle.load(fin)
+        tract_poi = pickle.load(fin)
+        
+    n = len(ordKey)
+    header = ['Food', 'Residence', 'Travel', 'Arts & Entertainment', 
+        'Outdoors & Recreation', 'College & Education', 'Nightlife', 
+        'Professional', 'Shops', 'Event']
+    x = np.zeros((n, len(header)))
+    for i, k in enumerate(ordKey):
+        if k in tract_poi:
+            for j, h in enumerate(header):
+                if h in tract_poi[k]:
+                    x[i, j] = tract_poi[k][h]
+            row_sum = np.sum(x[i,:])
+            if row_sum > 0:
+                x[i,:] = x[i,:] / row_sum
+    
+    cls = KMeans(n_clusters=nclusters)
+    res = cls.fit(x)
+    return ordKey, res.labels_
+        
+
+def generateCrimeClusteringlabel(nclusters):
+    crimes = []
+    ids = []
+    with open("../data/chicago-crime-tract-level-2013.csv") as fin:
+        h = fin.readline()
+        for l in fin:
+            ls = l.strip().split(",")
+            ids.append(int(ls[0][5:]))
+            total = float(ls[-1])
+            vec = np.array([int(e) for e in ls[1:-1]]) / total
+            crimes.append(vec)
+            
+    cls = KMeans(n_clusters=nclusters)
+    res = cls.fit(crimes)
+    return ids, res.labels_
+    
+    
     
 
 def clusteringAccuracy(features, tid, gndTid, gndLabels, nclusters):
@@ -375,18 +423,21 @@ def clusteringAccuracy(features, tid, gndTid, gndLabels, nclusters):
         cnt_pos += grp_cnt[grp_id, mapto]
     
     
-    return cnt_pos / len(tid)     
+    return cnt_pos / len(gndTid)     
             
 
-def evaluate_by_clustering(numCluster = 3):
+def evaluate_by_clustering(numCluster = 4):
     
     with open("../miscs/nmf-tract.pickle") as fin2:
         nmfeatures = pickle.load(fin2)
         nmRid = pickle.load(fin2)
     
-    gndTid, gndLabels = generateTweetsGNTlabel(numCluster)
-    for i in range(numCluster):
-        print i, np.argwhere(gndLabels==i).shape[0]
+#    gndTid, gndLabels = generateTweetsClusteringlabel(numCluster)
+#    gndTid, gndLabels = generatePOIClusteringlabel(numCluster)
+    gndTid, gndLabels = generateCrimeClusteringlabel(numCluster)
+    
+    visualizeClusteringResults(gndTid, gndLabels, numCluster)
+
     # test the static graph clustering    
     features, rid = retrieveEmbeddingFeatures_helper("../miscs/taxi-all.vec")
     accr = clusteringAccuracy(features, rid, gndTid, gndLabels, numCluster)
@@ -427,9 +478,42 @@ def evaluate_by_clustering(numCluster = 3):
     plt.plot(ACC3)
     plt.plot(ACC4)
     plt.legend(["MF", "LINE", "CrossTime", "CT+Spatial"], loc='best')
+    plt.title("POI clustering evaluation")
+    plt.xlabel("Time slot")
+    plt.ylabel("Accuracy")
+       
+ 
     
-     
+def visualizeClusteringResults(gndTid, gndLabels, numCluster):
+    import shapefile
+    from shapely.geometry import Polygon
+    from descartes import PolygonPatch
+    import matplotlib.patches as mpatches
     
+    sf = shapefile.Reader("../data/Census-Tracts-2010/chicago-tract")
+    shps = sf.shapes()
+    tracts = {}
+    for idx, shp in enumerate(shps):
+        tid = int(sf.record(idx)[2])
+        tracts[tid] = Polygon(shp.points)
+        
+    clrs = ["b", "r", "g", "c", "w", "b"]
+    
+    f = plt.figure()
+    ax = f.gca()
+    for i, tid in enumerate(gndTid):
+        ax.add_patch(PolygonPatch(tracts[tid], alpha=0.5, fc=clrs[gndLabels[i]]))
+    
+    legend_handles = []
+    for i in range(numCluster):
+        cnt = np.argwhere(gndLabels==i).shape[0]
+        lh = mpatches.Patch(color=clrs[i], label="{0} with #{1} samples".format(i, cnt))
+        legend_handles.append(lh)
+    plt.legend(handles=legend_handles)
+    plt.title("Clustering ground truth visualization")
+        
+    ax.axis("scaled")
+    plt.show()
     
     
 if __name__ == '__main__':
@@ -442,11 +526,9 @@ if __name__ == '__main__':
         elif sys.argv[1] == "pairwise-case":
             casestudy_pairwise_similarity()
         elif sys.argv[1] == "cluster-eval":
-            evaluate_by_clustering()
+            evaluate_by_clustering(4)
         else:
             print "wrong parameter"
     else:
         print "missing parameter"
-        f1, i1 = retrieveCrossIntervalEmbeddings()
-        
     
