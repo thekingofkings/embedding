@@ -388,7 +388,54 @@ def generateCrimeClusteringlabel(nclusters):
     res = cls.fit(crimes)
     return ids, res.labels_
     
+
     
+def generateLEHDClusteringlabel(ncluster, racORwac="rac"):
+    keys = []
+    with open("../data/chicago-crime-tract-level-2013.csv") as fin:
+        h = fin.readline()
+        for l in fin:
+            ls = l.strip().split(",")
+            keys.append(ls[0])
+    assert(len(keys)==801)
+    
+    racs = {}
+    fn = "../data/il_rac_S000_JT03_2013.csv" if racORwac == "rac" else "../data/il_wac_S000_JT00_2013.csv"
+    with open(fn) as fin2:
+        h = fin2.readline()
+        for l in fin2:
+            ls = l.strip().split(",")
+            tid = ls[0][0:11]
+            if tid in keys:
+                tid = int(tid[5:])
+                vec = np.array([int(e) for e in ls[1:-1]])
+                if tid not in racs:
+                    racs[tid] = vec
+                else:
+                    racs[tid] = mergeBlockCensus(vec, racs[tid])
+    
+    ids = []
+    x = []
+    for tid, vec in racs.items():
+        vec_sum = float(sum(vec))
+        if vec_sum != 0:
+            ids.append(tid)
+            x.append(vec / vec_sum)
+            
+    cls = KMeans(n_clusters=ncluster)
+    res = cls.fit(x)
+    return ids, res.labels_
+
+
+def mergeBlockCensus( a , b ):
+    if len(a) != len(b):
+        print "Two list length do not match!"
+        return None
+        
+    for idx, val in enumerate(a):
+        a[idx] += b[idx]
+        
+    return a    
     
 
 def clusteringAccuracy(features, tid, gndTid, gndLabels, nclusters):
@@ -434,7 +481,8 @@ def evaluate_by_clustering(numCluster = 4):
     
 #    gndTid, gndLabels = generateTweetsClusteringlabel(numCluster)
 #    gndTid, gndLabels = generatePOIClusteringlabel(numCluster)
-    gndTid, gndLabels = generateCrimeClusteringlabel(numCluster)
+#    gndTid, gndLabels = generateCrimeClusteringlabel(numCluster)
+    gndTid, gndLabels = generateLEHDClusteringlabel(numCluster, "wac")
     
     visualizeClusteringResults(gndTid, gndLabels, numCluster)
 
@@ -531,4 +579,5 @@ if __name__ == '__main__':
             print "wrong parameter"
     else:
         print "missing parameter"
-    
+        i, l = generateLEHDClusteringlabel(4, "rac")
+        visualizeClusteringResults(i, l, 4)
