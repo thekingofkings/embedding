@@ -9,8 +9,6 @@ import org.opengis.feature.simple.SimpleFeature;
 
 import java.io.*;
 import java.util.*;
-import java.util.stream.Collectors;
-
 
 /**
  * Construct the boundary of community areas from shapefile.
