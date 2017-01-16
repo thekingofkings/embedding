@@ -51,7 +51,7 @@ if __name__ == '__main__':
         f, tid = NMFfeatures(h)
         nmfeatures.append(f)
         regionIDs.append(tid)
-    with open("nmf-tract.pickle", "w") as fout:
+    with open("../miscs/nmf-tract.pickle", "w") as fout:
         pickle.dump(nmfeatures, fout)
         pickle.dump(regionIDs, fout)
 
