@@ -29,7 +29,7 @@ def NMFfeatures_helper(h):
     d1, d2 = f.shape
     assert d1 == d2 and d1 == 77
     
-    nmf = nimfa.Nmf(f, rank=10, max_iter=30, update="divergence", objective="conn", conn_change=50)
+    nmf = nimfa.Snmf(f, rank=4, max_iter=100, update="divergence", objective="conn", conn_change=50)
     nmf_fit = nmf()
     src = nmf_fit.basis()
     dst = nmf_fit.coef()

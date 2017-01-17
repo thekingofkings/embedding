@@ -103,7 +103,6 @@ def retrieveEmbeddingFeatures_helper(fileName):
     t = np.genfromtxt(fileName, delimiter=" ", skip_header=1)
     rid = t[:,0].astype(int)
     features = t[:, 1:]
-    assert features.shape[1] == 20
     return features, rid
     
     

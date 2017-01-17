@@ -76,6 +76,27 @@ public class CommunityAreas
         System.out.format("Map trips into communities finished in %s seconds.\n", (t2-t1)/1000);
     }
 
+    private void outputStaticFlowGraph() {
+        try {
+            BufferedWriter fout = new BufferedWriter(new FileWriter("../miscs/taxi-CA-static.matrix"));
+            BufferedWriter fout2 = new BufferedWriter(new FileWriter("../miscs/taxi-CA-static.od"));
+            for (int i = 1; i <= communities.size(); i++) {
+                List<String> row = new LinkedList<>();
+                for (int j = 1; j <= communities.size(); j++) {
+                    int w = communities.get(i).getFlowTo(j, 0, 23);
+                    row.add(Integer.toString(w));
+                    if (w > 0)
+                        fout2.write(String.format("%d %d %d\n", i, j, w));
+                }
+                String line = String.join(",", row);
+                fout.write(line + "\n");
+            }
+            fout.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     private void outputAdjacencyMatrix() {
         try {
             for (int hour = 0; hour < 24; hour ++) {
@@ -119,8 +140,9 @@ public class CommunityAreas
     {
         CommunityAreas CAs = new CommunityAreas();
         CAs.mapTripsIntoCommunities();
-        CAs.outputEdgeGraph_LINE();
-        CAs.outputAdjacencyMatrix();
+        CAs.outputStaticFlowGraph();
+//        CAs.outputEdgeGraph_LINE();
+//        CAs.outputAdjacencyMatrix();
     }
 }
 

@@ -44,6 +44,11 @@ public class DeepWalk {
 
         File seqDir = new File(String.format("../miscs/deepwalkseq-%s", regionLevel));
         String out = String.format("../miscs/taxi-deepwalk-%s-%s.vec", regionLevel, spatialGF);
+        int layerSize = 20;
+        if (regionLevel.equals("CA"))
+            layerSize = 8;
+        else if (regionLevel.equals("tract"))
+            layerSize = 20;
 
         log.info("Load and vectorize");
         SentenceIterator itr = new FileSentenceIterator(seqDir);
@@ -51,7 +56,7 @@ public class DeepWalk {
 
         log.info("Building model");
         Word2Vec w2v = new Word2Vec.Builder().minWordFrequency(2)
-                .layerSize(20).iterations(1).windowSize(24)
+                .layerSize(layerSize).iterations(1).windowSize(24)
                 .iterate(itr).tokenizerFactory(t).build();
 
         log.info("Fitting w2v model");
