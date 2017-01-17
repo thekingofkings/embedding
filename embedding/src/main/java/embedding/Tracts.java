@@ -52,16 +52,25 @@ public class Tracts {
         mapTripsIntoTracts(tracts.keySet());
     }
 
-    public void mapTripsIntoTracts(Set<Integer> focusKeys) {
+    public void mapTripsIntoTracts(Iterator<TaxiTrip> tripsItr) {
+        mapTripsIntoTracts(tracts.keySet(), tripsItr);
+    }
+
+    public void mapTripsIntoTracts(Set<Integer> focusTracts) {
+        List<TaxiTrip> trips = TaxiTrip.parseTaxiFiles();
+        mapTripsIntoTracts(focusTracts, trips.iterator());
+    }
+
+    public void mapTripsIntoTracts(Set<Integer> focusTracts, Iterator<TaxiTrip> tripsItr) {
         long t1 = System.currentTimeMillis();
         System.out.println("Start mapping trips into tracts...");
         Map<Integer, Tract> focusGroup = new HashMap<>();
-        for (int k : focusKeys)
+        for (int k : focusTracts)
             focusGroup.put(k, tracts.get(k));
 
-
-        List<TaxiTrip> trips = TaxiTrip.parseTaxiFiles();
-        for (TaxiTrip tt : trips) {
+        TaxiTrip tt = null;
+        while (tripsItr.hasNext()) {
+            tt = tripsItr.next();
             Tract s = null, e = null;
             for (Tract t : focusGroup.values()) {
                 if (t.boundary.contains(tt.startLoc))
@@ -83,6 +92,27 @@ public class Tracts {
 
         long t2 = System.currentTimeMillis();
         System.out.format("Map trips into tracts finished in %s seconds.\n", (t2-t1)/1000);
+    }
+
+    public void serializeTracts(int year) {
+        try {
+            ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(String.format("../miscs/tracts-serialize-%d.seq", year)));
+            oos.writeInt(numTimeSlot);
+            oos.writeObject(tracts);
+            oos.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void deserialzeTracts(int year) {
+        try {
+            ObjectInputStream ois = new ObjectInputStream(new FileInputStream(String.format("../miscs/tracts-serialize-%d.seq", year)));
+            numTimeSlot = ois.readInt();
+            tracts = (HashMap<Integer, Tract>) ois.readObject();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public void visualizeCasesAsDotFile(int residence, int nightlife, int professional) {
@@ -377,6 +407,11 @@ public class Tracts {
                 case_from_bruteForce();
             } else if (argv[0].equals("edge-file")) {
                 generateEdgeFileForEmbedding();
+            } else if (argv[0].equals("serialize-tracts")) {
+                Tracts tracts = new Tracts();
+                TaxiTripIterator tti = new TaxiTripIterator(2014);
+                tracts.mapTripsIntoTracts(tti);
+                tracts.serializeTracts(2014);
             }
         } else {
             System.out.println("Specify task!");
@@ -385,7 +420,7 @@ public class Tracts {
 }
 
 
-class Tract {
+class Tract implements Serializable {
     int id;
     MultiPolygon boundary;
 
@@ -433,5 +468,23 @@ class Tract {
         Point tc = this.getCentroid();
         Point oc = o.getCentroid();
         return tc.distance(oc);
+    }
+
+    private void writeObject(ObjectOutputStream out) throws IOException {
+        out.writeInt(id);
+        out.writeObject(boundary);
+        out.writeObject(taxiFlows);
+    }
+
+    private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
+        id = in.readInt();
+        boundary = (MultiPolygon) in.readObject();
+        taxiFlows = (List<AbstractMap<Integer, Integer>>) in.readObject();
+    }
+
+    private void readOjbectNoData() throws ObjectStreamException {
+        id = -1;
+        boundary = null;
+        taxiFlows = null;
     }
 }

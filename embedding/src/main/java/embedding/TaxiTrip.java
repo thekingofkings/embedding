@@ -120,7 +120,7 @@ public class TaxiTrip {
         return trips;
     }
 
-    private static void parseTaxiFilesHelper(File taxiDir, FilenameFilter flt, List<TaxiTrip> trips) {
+    public static void parseTaxiFilesHelper(File taxiDir, FilenameFilter flt, List<TaxiTrip> trips) {
         String[] files = taxiDir.list(flt);
         try {
             for (String fn : files) {

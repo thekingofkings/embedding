@@ -10,6 +10,8 @@ import org.opengis.feature.simple.SimpleFeature;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.AbstractMap;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -82,6 +84,27 @@ public class TractsTest extends TestCase {
         assertEquals(t2.getCentroid().getY(), 11.0);
 
         assertEquals(t1.distanceTo(t2), 10.0);
+    }
+
+    public void testSerialize() {
+        Tracts trts = new Tracts();
+
+        List<TaxiTrip> trips = new ArrayList<>();
+        TaxiTrip.tripFormat = TaxiTrip.TAXITYPE.Type1;
+        TaxiTrip.parseTaxiFilesHelper(new File(TaxiTrip.tripFilePath), (file, s) -> s.matches("201[34]-.*"), trips);
+
+        trts.mapTripsIntoTracts(trips.iterator());
+        trts.serializeTracts(2014);
+        AbstractMap<Integer, Tract> org_trts = trts.tracts;
+        int org_nts = Tracts.numTimeSlot;
+
+        Tracts trts2 = new Tracts();
+        trts2.deserialzeTracts(2014);
+        AbstractMap<Integer, Tract> new_trts = trts2.tracts;
+
+        assertEquals(Tracts.numTimeSlot, org_nts);
+//        assertEquals(org_trts.get());
+
     }
 
 }
