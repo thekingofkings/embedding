@@ -409,9 +409,9 @@ public class Tracts {
                 generateEdgeFileForEmbedding();
             } else if (argv[0].equals("serialize-tracts")) {
                 Tracts tracts = new Tracts();
-                TaxiTripIterator tti = new TaxiTripIterator(2014);
+                TaxiTripIterator tti = new TaxiTripIterator(2013);
                 tracts.mapTripsIntoTracts(tti);
-                tracts.serializeTracts(2014);
+                tracts.serializeTracts(2013);
             }
         } else {
             System.out.println("Specify task!");

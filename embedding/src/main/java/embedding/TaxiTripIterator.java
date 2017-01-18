@@ -73,7 +73,7 @@ public class TaxiTripIterator implements Iterator<TaxiTrip> {
         try {
             String fn = taxiDir + File.separator + fileNames[curFileIdx];
             fin = new BufferedReader(new FileReader(fn));
-            System.out.format("Start process file %s.\n", fn);
+            System.out.format("#bad trip: %d\t#total trip: %d.\nStart process file %s.\n", numBadTrip, numTotalTrip, fn);
         } catch (ArrayIndexOutOfBoundsException e) {
             fin = null;
         } catch (FileNotFoundException e) {

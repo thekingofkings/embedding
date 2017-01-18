@@ -76,6 +76,51 @@ public class CommunityAreas
         System.out.format("Map trips into communities finished in %s seconds.\n", (t2-t1)/1000);
     }
 
+    public void mapTripsIntoCommunities(TaxiTripIterator tripItr) {
+        long t1 = System.currentTimeMillis();
+        System.out.println("Start mapping trips into communities.");
+
+        while (tripItr.hasNext()) {
+            TaxiTrip t = tripItr.next();
+            CommunityArea s = null, e = null;
+            for (CommunityArea ca : communities.values()) {
+                if (ca.boundary.contains(t.startLoc))
+                    s = ca;
+                if (ca.boundary.contains(t.endLoc))
+                    e = ca;
+                if (s != null && e != null) {
+                    int hour = t.startDate.hour;
+                    int curCount = s.getFlowTo(e.id, hour);
+                    s.taxiFlows.get(hour).put(e.id, curCount+1);
+                    break;
+                }
+            }
+        }
+
+        long t2 = System.currentTimeMillis();
+        System.out.format("Map trips into communities finished in %s seconds.\n", (t2-t1)/1000);
+    }
+
+    public void serializeCAs(int year) {
+        try {
+            ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(String.format("../miscs/CA-serialize-%d.seq", year)));
+            oos.writeObject(communities);
+            oos.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void deserialzeCAs(int year) {
+        try {
+            ObjectInputStream ois = new ObjectInputStream(new FileInputStream(String.format("../miscs/CA-serialize-%d.seq", year)));
+            communities = (HashMap<Integer, CommunityArea>) ois.readObject();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+
     private void outputStaticFlowGraph() {
         try {
             BufferedWriter fout = new BufferedWriter(new FileWriter("../miscs/taxi-CA-static.matrix"));
@@ -136,18 +181,27 @@ public class CommunityAreas
     }
 
 
+    public static void serializeCommunityAreas() {
+        CommunityAreas CAs = new CommunityAreas();
+        TaxiTripIterator tti = new TaxiTripIterator(2013);
+        CAs.mapTripsIntoCommunities(tti);
+        CAs.serializeCAs(2013);
+    }
+
+
     public static void main( String[] args )
     {
-        CommunityAreas CAs = new CommunityAreas();
-        CAs.mapTripsIntoCommunities();
-        CAs.outputStaticFlowGraph();
+        serializeCommunityAreas();
+//        CommunityAreas CAs = new CommunityAreas();
+//        CAs.mapTripsIntoCommunities();
+//        CAs.outputStaticFlowGraph();
 //        CAs.outputEdgeGraph_LINE();
 //        CAs.outputAdjacencyMatrix();
     }
 }
 
 
-class CommunityArea {
+class CommunityArea implements Serializable{
     int id;     // index start at 1
     String name;
     MultiPolygon boundary;
@@ -197,5 +251,26 @@ class CommunityArea {
         Point tc = this.getCentroid();
         Point oc = o.getCentroid();
         return tc.distance(oc);
+    }
+
+    private void writeObject(ObjectOutputStream out) throws IOException {
+        out.writeInt(id);
+        out.writeObject(name);
+        out.writeObject(boundary);
+        out.writeObject(taxiFlows);
+    }
+
+    private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
+        id = in.readInt();
+        name = (String) in.readObject();
+        boundary = (MultiPolygon) in.readObject();
+        taxiFlows = (List<AbstractMap<Integer, Integer>>) in.readObject();
+    }
+
+    private void readOjbectNoData() throws ObjectStreamException {
+        id = -1;
+        name = "";
+        boundary = null;
+        taxiFlows = null;
     }
 }
