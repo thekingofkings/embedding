@@ -48,6 +48,12 @@ public class Tracts {
         return features;
     }
 
+    /**
+     * @deprecated mapTripIntoTracts takes a lot of time to run.
+     *
+     * The {@link Tracts#serializeTracts(int)} function has saved the flow graphs as a file.
+     * Use the {@link Tracts#deserialzeTracts(int)} function to retrieve the graph to save time.
+     */
     public void mapTripsIntoTracts() {
         mapTripsIntoTracts(tracts.keySet());
     }
@@ -286,6 +292,9 @@ public class Tracts {
      * intervals, there are edges and the weight denoting the traffic flow count in previous interval.
      *
      * The basic assumption is that people go to B from A during interval t_i, then they stay there in t_i+1.
+     *
+     * @deprecated We do not use learn word2vec on top of this graph. Instead, we use {@link LayeredGraph}. More
+     * specifically, we use {@link CrossTimeGraph} and {@link SpatialGraph}.
      */
     public void outputEdgeGraph_crossInterval() {
         try {
@@ -307,10 +316,10 @@ public class Tracts {
 
     public static void generateEdgeFileForEmbedding() {
         Tracts trts = new Tracts();
-        trts.mapTripsIntoTracts();
+        trts.deserialzeTracts(2014);
         trts.outputEdgeFile();  // for graph embedding LINE
         trts.outputAdjacencyMatrix();   // for matrix factorization
-        //trts.outputEdgeGraph_crossInterval();
+//        trts.outputEdgeGraph_crossInterval();
     }
 
     public static void case_by_poi() {
@@ -395,7 +404,7 @@ public class Tracts {
             if (argv[0].equals("tracts-ts")) {
                 Tracts tracts = new Tracts();
                 Set<Integer> foc = new HashSet<>(Arrays.asList(new Integer[]{839100, 81800, 81403, 320100}));
-                tracts.mapTripsIntoTracts(foc);
+                tracts.deserialzeTracts(2014);
                 tracts.timeSeries_traffic(foc);
             } else if (argv[0].equals("case-poi")) {
                 case_by_poi();

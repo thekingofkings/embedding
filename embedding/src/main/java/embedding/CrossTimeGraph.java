@@ -14,7 +14,7 @@ import java.util.List;
  */
 public class CrossTimeGraph extends LayeredGraph {
 
-    public static int numSamples = 7_000_000;
+    public static int numSamples = 10_000_000;
     public static int numLayer = LayeredGraph.numLayer;
 
     public CrossTimeGraph() {
@@ -23,7 +23,7 @@ public class CrossTimeGraph extends LayeredGraph {
 
     public static CrossTimeGraph constructGraph_tract() {
         Tracts trts = new Tracts();
-        trts.mapTripsIntoTracts();
+        trts.deserialzeTracts(2014);
 
         long t1 = System.currentTimeMillis();
         System.out.println("Start generating cross-time graph...");

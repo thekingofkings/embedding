@@ -13,7 +13,7 @@ import java.util.List;
  */
 public class SpatialGraph extends LayeredGraph {
 
-    public static int numSamples = 1_000_000;
+    public static int numSamples = 5_000_000;
     public static int numLayer = LayeredGraph.numLayer;
 
     public SpatialGraph() {

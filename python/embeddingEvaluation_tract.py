@@ -392,38 +392,60 @@ def generateCrimeClusteringlabel(nclusters):
 def generateLEHDClusteringlabel(ncluster, racORwac="rac"):
     keys = []
     with open("../data/chicago-crime-tract-level-2013.csv") as fin:
-        h = fin.readline()
+        fin.readline()
         for l in fin:
             ls = l.strip().split(",")
             keys.append(ls[0])
     assert(len(keys)==801)
     
-    racs = {}
-    fn = "../data/il_rac_S000_JT03_2013.csv" if racORwac == "rac" else "../data/il_wac_S000_JT00_2013.csv"
-    with open(fn) as fin2:
-        h = fin2.readline()
-        for l in fin2:
-            ls = l.strip().split(",")
-            tid = ls[0][0:11]
-            if tid in keys:
-                tid = int(tid[5:])
-                vec = np.array([int(e) for e in ls[1:-1]])
-                if tid not in racs:
-                    racs[tid] = vec
-                else:
-                    racs[tid] = mergeBlockCensus(vec, racs[tid])
+    acs = {}
+    if racORwac == "rac":
+        fn = "../data/il_rac_S000_JT03_2013.csv"
+        acs = getLEHDfeatures_helper(fn, keys)
+    elif racORwac == "wac":
+        fn = "../data/il_wac_S000_JT00_2013.csv"
+        acs = getLEHDfeatures_helper(fn, keys)
+    elif racORwac == "both":
+        racs = getLEHDfeatures_helper("../data/il_rac_S000_JT03_2013.csv", keys)
+        wacs = getLEHDfeatures_helper("../data/il_wac_S000_JT00_2013.csv", keys)
+        for k in keys:
+            v1 = racs[k] if k in racs else np.zeros((40,))
+            v2 = wacs[k] if k in wacs else np.zeros((40,))
+            v = np.concatenate((v1, v2))
+            acs[k] = v
+        
     
     ids = []
     x = []
-    for tid, vec in racs.items():
+    for tid, vec in acs.items():
+        print tid, vec
         vec_sum = float(sum(vec))
         if vec_sum != 0:
             ids.append(tid)
-            x.append(vec / vec_sum)
+            v = vec / vec_sum
+            print v.shape
+            x.append(v)
             
     cls = KMeans(n_clusters=ncluster)
     res = cls.fit(x)
     return ids, res.labels_
+
+
+def getLEHDfeatures_helper(fn, keys):
+    acs = {}
+    with open(fn) as fin:
+        fin.readline()
+        for l in fin:
+            ls = l.strip().split(",")
+            tid = ls[0][0:11]
+            if tid in keys:
+                tid = int(tid[5:])
+                vec = np.array([int(e) for e in ls[2:-1]])
+                if tid not in acs:
+                    acs[tid] = vec
+                else:
+                    acs[tid] = mergeBlockCensus(vec, acs[tid])
+    return acs
 
 
 def mergeBlockCensus( a , b ):
@@ -481,7 +503,7 @@ def evaluate_by_clustering(numCluster = 4):
 #    gndTid, gndLabels = generateTweetsClusteringlabel(numCluster)
 #    gndTid, gndLabels = generatePOIClusteringlabel(numCluster)
 #    gndTid, gndLabels = generateCrimeClusteringlabel(numCluster)
-    gndTid, gndLabels = generateLEHDClusteringlabel(numCluster, "wac")
+    gndTid, gndLabels = generateLEHDClusteringlabel(numCluster, "both")
     
     visualizeClusteringResults(gndTid, gndLabels, numCluster)
 
@@ -492,8 +514,8 @@ def evaluate_by_clustering(numCluster = 4):
     
     
     embedFeatures, embedRid = retrieveEmbeddingFeatures()
-    crosstimeFeatures, cteRid = retrieveCrossIntervalEmbeddings("../miscs/taxi-deepwalk-nospatial.vec", skipheader=0)
-    twoGraphEmbeds, twoGRids = retrieveCrossIntervalEmbeddings("../miscs/taxi-deepwalk.vec", skipheader=0)
+    crosstimeFeatures, cteRid = retrieveCrossIntervalEmbeddings("../miscs/taxi-deepwalk-tract-nospatial.vec", skipheader=0)
+    twoGraphEmbeds, twoGRids = retrieveCrossIntervalEmbeddings("../miscs/taxi-deepwalk-tract-usespatial.vec", skipheader=0)
     
     ACC1 = []
     ACC2 = []
@@ -578,5 +600,5 @@ if __name__ == '__main__':
             print "wrong parameter"
     else:
         print "missing parameter"
-        i, l = generateLEHDClusteringlabel(4, "rac")
+        i, l = generateLEHDClusteringlabel(4, "wac")
         visualizeClusteringResults(i, l, 4)
