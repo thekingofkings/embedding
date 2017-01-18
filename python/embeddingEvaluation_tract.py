@@ -409,21 +409,20 @@ def generateLEHDClusteringlabel(ncluster, racORwac="rac"):
         racs = getLEHDfeatures_helper("../data/il_rac_S000_JT03_2013.csv", keys)
         wacs = getLEHDfeatures_helper("../data/il_wac_S000_JT00_2013.csv", keys)
         for k in keys:
-            v1 = racs[k] if k in racs else np.zeros((40,))
-            v2 = wacs[k] if k in wacs else np.zeros((40,))
+            tid = int(k[5:])
+            v1 = racs[tid] if tid in racs else np.zeros((20,))
+            v2 = wacs[tid] if tid in wacs else np.zeros((20,))
             v = np.concatenate((v1, v2))
-            acs[k] = v
+            acs[tid] = v
         
     
     ids = []
     x = []
     for tid, vec in acs.items():
-        print tid, vec
         vec_sum = float(sum(vec))
         if vec_sum != 0:
             ids.append(tid)
             v = vec / vec_sum
-            print v.shape
             x.append(v)
             
     cls = KMeans(n_clusters=ncluster)
@@ -440,7 +439,7 @@ def getLEHDfeatures_helper(fn, keys):
             tid = ls[0][0:11]
             if tid in keys:
                 tid = int(tid[5:])
-                vec = np.array([int(e) for e in ls[2:-1]])
+                vec = np.array([int(e) for e in ls[8:28]])  # job section 8:28
                 if tid not in acs:
                     acs[tid] = vec
                 else:
