@@ -344,7 +344,7 @@ def generateTweetsClusteringlabel(nclusters):
     cls = KMeans(n_clusters=nclusters)
     res = cls.fit(features)
     return tid, res.labels_
-    
+
 
 
 def generatePOIClusteringlabel(nclusters):
@@ -387,6 +387,26 @@ def generateCrimeClusteringlabel(nclusters):
     res = cls.fit(crimes)
     return ids, res.labels_
     
+
+
+def generateLEHD_cnt_clusteringLabel(ncluster):
+    with open("../miscs/POI_tract.pickle") as fin, open("../miscs/lehd-tract-2013.pickle") as fin2:
+        ordKey = pickle.load(fin)
+        lehdFlow = pickle.load(fin2)
+        
+    x = []
+    for row in lehdFlow:
+        s = sum(row)
+        if s == 0:
+            x.append(row)
+        else:
+            x.append(row / s)
+        
+        
+    cls = KMeans(n_clusters=ncluster)
+    res = cls.fit(x)
+    return ordKey, res.labels_
+
 
     
 def generateLEHDClusteringlabel(ncluster, racORwac="rac"):
@@ -502,9 +522,10 @@ def evaluate_by_clustering(numCluster = 4):
 #    gndTid, gndLabels = generateTweetsClusteringlabel(numCluster)
 #    gndTid, gndLabels = generatePOIClusteringlabel(numCluster)
 #    gndTid, gndLabels = generateCrimeClusteringlabel(numCluster)
-    gndTid, gndLabels = generateLEHDClusteringlabel(numCluster, "both")
+#    gndTid, gndLabels = generateLEHDClusteringlabel(numCluster, "both")
+    gndTid, gndLabels = generateLEHD_cnt_clusteringLabel(numCluster)
     
-    visualizeClusteringResults(gndTid, gndLabels, numCluster)
+    visualizeClusteringResults(gndTid, gndLabels, numCluster, "Clustering ground truth")
 
     # test the static graph clustering    
     features, rid = retrieveEmbeddingFeatures_helper("../miscs/taxi-all.vec")
@@ -551,8 +572,34 @@ def evaluate_by_clustering(numCluster = 4):
     plt.ylabel("Accuracy")
        
  
+
+
+def clustering_case_study(numClusters=4):
+    cls = KMeans(n_clusters=numClusters)
+#    twoGraphEmbeds, twoGRids = retrieveCrossIntervalEmbeddings("../miscs/taxi-deepwalk-tract-usespatial.vec", skipheader=0)
+#    
+#    for h in range(numLayer):
+#        res = cls.fit(twoGraphEmbeds[h])
+#        labels = res.labels_
+#        visualizeClusteringResults(twoGRids[h], labels, numClusters, "Embedding clustering at {0}".format(h))
+        
     
-def visualizeClusteringResults(gndTid, gndLabels, numCluster):
+#    gndTid, gndLabels = generateLEHDClusteringlabel(numClusters, "both")
+#    visualizeClusteringResults(gndTid, gndLabels, numClusters, "Clustering ground truth with RAC+WAC")
+#    
+    gndTid, gndLabels = generateLEHD_cnt_clusteringLabel(numClusters)
+    visualizeClusteringResults(gndTid, gndLabels, numClusters, "Clustering ground truth with LEHD count")
+    
+    gndTid, gndLabels = generateLEHDClusteringlabel(numClusters, "rac")
+    visualizeClusteringResults(gndTid, gndLabels, numClusters, "Clustering ground truth with RAC")
+    
+    gndTid, gndLabels = generateLEHDClusteringlabel(numClusters, "wac")
+    visualizeClusteringResults(gndTid, gndLabels, numClusters, "Clustering ground truth with WAC")
+
+
+
+    
+def visualizeClusteringResults(gndTid, gndLabels, numCluster, titleStr):
     import shapefile
     from shapely.geometry import Polygon
     from descartes import PolygonPatch
@@ -567,7 +614,7 @@ def visualizeClusteringResults(gndTid, gndLabels, numCluster):
         
     clrs = ["b", "r", "g", "c", "w", "b"]
     
-    f = plt.figure()
+    f = plt.figure(figsize=(12,12))
     ax = f.gca()
     for i, tid in enumerate(gndTid):
         ax.add_patch(PolygonPatch(tracts[tid], alpha=0.5, fc=clrs[gndLabels[i]]))
@@ -578,10 +625,11 @@ def visualizeClusteringResults(gndTid, gndLabels, numCluster):
         lh = mpatches.Patch(color=clrs[i], label="{0} with #{1} samples".format(i, cnt))
         legend_handles.append(lh)
     plt.legend(handles=legend_handles)
-    plt.title("Clustering ground truth visualization")
+    plt.title(titleStr)
         
     ax.axis("scaled")
-    plt.show()
+    plt.savefig(titleStr+".png", pad_inches=0.01)
+#    plt.show()
     
     
 if __name__ == '__main__':
@@ -595,6 +643,8 @@ if __name__ == '__main__':
             casestudy_pairwise_similarity()
         elif sys.argv[1] == "cluster-eval":
             evaluate_by_clustering(4)
+        elif sys.argv[1] == "cluster-case":
+            clustering_case_study(4)
         else:
             print "wrong parameter"
     else:
