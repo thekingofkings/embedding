@@ -46,9 +46,9 @@ public class DeepWalk {
         String out = String.format("../miscs/taxi-deepwalk-%s-%s.vec", regionLevel, spatialGF);
         int layerSize = 20;
         if (regionLevel.equals("CA"))
-            layerSize = 8;
+            layerSize = 2;
         else if (regionLevel.equals("tract"))
-            layerSize = 20;
+            layerSize = 2;
 
         log.info("Load and vectorize");
         SentenceIterator itr = new FileSentenceIterator(seqDir);

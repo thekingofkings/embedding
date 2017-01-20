@@ -52,7 +52,7 @@ public class CrossTimeGraph extends LayeredGraph {
 
     public static CrossTimeGraph constructGraph_CA() {
         CommunityAreas cas = new CommunityAreas();
-        cas.mapTripsIntoCommunities();
+        cas.deserialzeCAs(2014);
 
         long t1 = System.currentTimeMillis();
         System.out.println("Start generating crosstime graph for Communities ...");

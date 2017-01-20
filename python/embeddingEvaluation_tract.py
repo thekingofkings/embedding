@@ -251,7 +251,7 @@ def topKcover_case(k, estimator, pair_gnd, cmp_estimator):
     
     
     
-def evalute_by_pairwise_similarity():
+def evalute_by_pairwise_similarity(topk=20):
     with open("../miscs/POI_tract.pickle") as fin:
         ordKey = pickle.load(fin)
         tract_poi = pickle.load(fin)
@@ -289,16 +289,17 @@ def evalute_by_pairwise_similarity():
         cov3 = len(cteRid[h]) / float(len(ordKey))
         cov4 = len(twoGRids[h]) / float(len(ordKey))
         
-        acc1 = topK_accuracy(20, pe_embed, pair_gnd)
-        acc2 = topK_accuracy(20, pe_mf, pair_gnd)
-        acc3 = topK_accuracy(20, pe_cte, pair_gnd)
-        acc4 = topK_accuracy(20, pe_twoG, pair_gnd)
+        acc1 = topK_accuracy(topk, pe_embed, pair_gnd)
+        acc2 = topK_accuracy(topk, pe_mf, pair_gnd)
+        acc3 = topK_accuracy(topk, pe_cte, pair_gnd)
+        acc4 = topK_accuracy(topk, pe_twoG, pair_gnd)
         
         ACC1.append(acc1)
         ACC2.append(acc2)
         ACC3.append(acc3)
         ACC4.append(acc4)
         print h, cov1, acc1, cov2, acc2, cov3, acc3, cov4, acc4
+    print np.mean(ACC1), np.mean(ACC2), np.mean(ACC3), np.mean(ACC4)
     plt.plot(ACC1)
     plt.plot(ACC2)
     plt.plot(ACC3)
@@ -630,6 +631,37 @@ def visualizeClusteringResults(gndTid, gndLabels, numCluster, titleStr):
     ax.axis("scaled")
     plt.savefig(titleStr+".png", pad_inches=0.01)
 #    plt.show()
+
+
+
+def visualizeEmbedding_2D(ncluster):
+    twoGraphEmbeds, twoGRids = retrieveCrossIntervalEmbeddings("../miscs/taxi-deepwalk-tract-usespatial.vec", skipheader=0)
+    
+#    gndTid, gndLabels = generateTweetsClusteringlabel(ncluster)
+#    gndTid, gndLabels = generatePOIClusteringlabel(ncluster)
+    gndTid, gndLabels = generateCrimeClusteringlabel(ncluster)
+#    gndTid, gndLabels = generateLEHDClusteringlabel(ncluster, "both")
+#    gndTid, gndLabels = generateLEHD_cnt_clusteringLabel(ncluster)
+    gndTid = np.array(gndTid)
+    clrs = ["b", "r", "g", "w", "c", "b"]
+    
+    
+    
+    plt.figure()
+    plt.suptitle("# cluster: {0}".format(ncluster))
+    for h in range(8):
+        ids = twoGRids[h]
+        plt.subplot(3,3,h+1)
+        for cluster in range(ncluster):
+            groupIds = gndTid[np.argwhere(gndLabels==cluster)]
+            idx = np.in1d(ids, groupIds)
+            x = twoGraphEmbeds[h][idx,0]
+            y = twoGraphEmbeds[h][idx,1]
+            
+            plt.scatter(x, y, c=clrs[cluster], hold=True)
+            plt.title("2D visualization at {0}".format(h))
+    plt.savefig("crime-{0}.png".format(ncluster))
+    
     
     
 if __name__ == '__main__':
@@ -638,13 +670,16 @@ if __name__ == '__main__':
         if sys.argv[1] == "binary":
             evalute_by_binary_classification()
         elif sys.argv[1] == "pairwise-eval":
-            evalute_by_pairwise_similarity()
+            evalute_by_pairwise_similarity(10)
         elif sys.argv[1] == "pairwise-case":
             casestudy_pairwise_similarity()
         elif sys.argv[1] == "cluster-eval":
             evaluate_by_clustering(4)
         elif sys.argv[1] == "cluster-case":
             clustering_case_study(4)
+        elif sys.argv[1] == "visualize-embedding":
+            for nc in range(2,7):
+                visualizeEmbedding_2D(nc)
         else:
             print "wrong parameter"
     else:

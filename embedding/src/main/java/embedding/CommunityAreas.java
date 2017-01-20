@@ -191,12 +191,12 @@ public class CommunityAreas
 
     public static void main( String[] args )
     {
-        serializeCommunityAreas();
-//        CommunityAreas CAs = new CommunityAreas();
-//        CAs.mapTripsIntoCommunities();
-//        CAs.outputStaticFlowGraph();
-//        CAs.outputEdgeGraph_LINE();
-//        CAs.outputAdjacencyMatrix();
+//        serializeCommunityAreas();
+        CommunityAreas CAs = new CommunityAreas();
+        CAs.deserialzeCAs(2014);
+        CAs.outputStaticFlowGraph();
+        CAs.outputEdgeGraph_LINE();
+        CAs.outputAdjacencyMatrix();
     }
 }
 
