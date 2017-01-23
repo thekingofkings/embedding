@@ -390,7 +390,7 @@ def generateCrimeClusteringlabel(nclusters):
     
 
 
-def generateLEHD_cnt_clusteringLabel(ncluster):
+def generateLEHD_od_clusteringLabel(ncluster):
     with open("../miscs/POI_tract.pickle") as fin, open("../miscs/lehd-tract-2013.pickle") as fin2:
         ordKey = pickle.load(fin)
         lehdFlow = pickle.load(fin2)
@@ -410,13 +410,12 @@ def generateLEHD_cnt_clusteringLabel(ncluster):
 
 
     
-def generateLEHDClusteringlabel(ncluster, racORwac="rac"):
+def generateLEHD_ac_clusteringLabel(ncluster, racORwac="rac"):
     keys = []
-    with open("../data/chicago-crime-tract-level-2013.csv") as fin:
-        fin.readline()
-        for l in fin:
-            ls = l.strip().split(",")
-            keys.append(ls[0])
+    import shapefile
+    sf = shapefile.Reader("../data/Census-Tracts-2010/chicago-tract")
+    for rec in sf.records():
+        keys.append(int(rec[2]))
     assert(len(keys)==801)
     
     acs = {}
@@ -429,8 +428,7 @@ def generateLEHDClusteringlabel(ncluster, racORwac="rac"):
     elif racORwac == "both":
         racs = getLEHDfeatures_helper("../data/il_rac_S000_JT03_2013.csv", keys)
         wacs = getLEHDfeatures_helper("../data/il_wac_S000_JT00_2013.csv", keys)
-        for k in keys:
-            tid = int(k[5:])
+        for tid in keys:
             v1 = racs[tid] if tid in racs else np.zeros((20,))
             v2 = wacs[tid] if tid in wacs else np.zeros((20,))
             v = np.concatenate((v1, v2))
@@ -457,10 +455,9 @@ def getLEHDfeatures_helper(fn, keys):
         fin.readline()
         for l in fin:
             ls = l.strip().split(",")
-            tid = ls[0][0:11]
+            tid = int(ls[0][5:11])
             if tid in keys:
-                tid = int(tid[5:])
-                vec = np.array([int(e) for e in ls[8:28]])  # job section 8:28
+                vec = np.array([int(e) for e in ls[1:2]])  # job section 8:28
                 if tid not in acs:
                     acs[tid] = vec
                 else:
@@ -523,8 +520,8 @@ def evaluate_by_clustering(numCluster = 4):
 #    gndTid, gndLabels = generateTweetsClusteringlabel(numCluster)
 #    gndTid, gndLabels = generatePOIClusteringlabel(numCluster)
 #    gndTid, gndLabels = generateCrimeClusteringlabel(numCluster)
-#    gndTid, gndLabels = generateLEHDClusteringlabel(numCluster, "both")
-    gndTid, gndLabels = generateLEHD_cnt_clusteringLabel(numCluster)
+#    gndTid, gndLabels = generateLEHD_ac_clusteringLabel(numCluster, "both")
+    gndTid, gndLabels = generateLEHD_od_clusteringLabel(numCluster)
     
     visualizeClusteringResults(gndTid, gndLabels, numCluster, "Clustering ground truth")
 
@@ -585,16 +582,16 @@ def clustering_case_study(numClusters=4):
 #        visualizeClusteringResults(twoGRids[h], labels, numClusters, "Embedding clustering at {0}".format(h))
         
     
-#    gndTid, gndLabels = generateLEHDClusteringlabel(numClusters, "both")
+#    gndTid, gndLabels = generateLEHD_ac_clusteringLabel(numClusters, "both")
 #    visualizeClusteringResults(gndTid, gndLabels, numClusters, "Clustering ground truth with RAC+WAC")
 #    
-    gndTid, gndLabels = generateLEHD_cnt_clusteringLabel(numClusters)
+    gndTid, gndLabels = generateLEHD_od_clusteringLabel(numClusters)
     visualizeClusteringResults(gndTid, gndLabels, numClusters, "Clustering ground truth with LEHD count")
     
-    gndTid, gndLabels = generateLEHDClusteringlabel(numClusters, "rac")
+    gndTid, gndLabels = generateLEHD_ac_clusteringLabel(numClusters, "rac")
     visualizeClusteringResults(gndTid, gndLabels, numClusters, "Clustering ground truth with RAC")
     
-    gndTid, gndLabels = generateLEHDClusteringlabel(numClusters, "wac")
+    gndTid, gndLabels = generateLEHD_ac_clusteringLabel(numClusters, "wac")
     visualizeClusteringResults(gndTid, gndLabels, numClusters, "Clustering ground truth with WAC")
 
 
@@ -634,14 +631,14 @@ def visualizeClusteringResults(gndTid, gndLabels, numCluster, titleStr):
 
 
 
-def visualizeEmbedding_2D(ncluster):
+def visualizeEmbedding_2D_withCluster(ncluster):
     twoGraphEmbeds, twoGRids = retrieveCrossIntervalEmbeddings("../miscs/taxi-deepwalk-tract-usespatial.vec", skipheader=0)
     
 #    gndTid, gndLabels = generateTweetsClusteringlabel(ncluster)
 #    gndTid, gndLabels = generatePOIClusteringlabel(ncluster)
     gndTid, gndLabels = generateCrimeClusteringlabel(ncluster)
-#    gndTid, gndLabels = generateLEHDClusteringlabel(ncluster, "both")
-#    gndTid, gndLabels = generateLEHD_cnt_clusteringLabel(ncluster)
+#    gndTid, gndLabels = generateLEHD_ac_clusteringLabel(ncluster, "both")
+#    gndTid, gndLabels = generateLEHD_od_clusteringLabel(ncluster)
     gndTid = np.array(gndTid)
     clrs = ["b", "r", "g", "w", "c", "b"]
     
@@ -662,6 +659,41 @@ def visualizeEmbedding_2D(ncluster):
             plt.title("2D visualization at {0}".format(h))
     plt.savefig("crime-{0}.png".format(ncluster))
     
+
+
+def visualizeEmbedding_2D():
+    from embeddingCaseStudy_CA import tract_to_CA
+    t2c = tract_to_CA()
+    twoGraphEmbeds, twoGRids = retrieveCrossIntervalEmbeddings("../miscs/taxi-deepwalk-tract-usespatial.vec", skipheader=0)
+    ca_groups = [[5,6,7,21,22], [8,32,33], [26, 27, 29, 30]]
+    tract_groups = [ [], [] , [] ]
+    for tid in t2c:
+        cid = t2c[tid]
+        for i, ca_group in enumerate(ca_groups):
+            if cid in ca_group:
+                tract_groups[i].append(tid)
+                break
+        
+    print [len(g) for g in tract_groups]
+            
+    clrs = ["b", "r", "g", "w", "c", "b"]
+    
+    plt.figure(figsize=(22,14))
+    for h in range(8):
+        plt.subplot(3,3,h+1)
+        for i, group in enumerate(tract_groups):
+            idx = np.in1d(twoGRids[h], group)
+            x = twoGraphEmbeds[h][idx,0]
+            y = twoGraphEmbeds[h][idx,1]
+            ids = twoGRids[h][idx]
+            
+            plt.scatter(x, y, c=clrs[i], hold=True)
+#            for j, e in enumerate(ids):
+#                plt.annotate(s = str(e), xy=(x[j], y[j]), xytext=(-5, 5), textcoords="offset points")
+            plt.title("2D visualization at {0}".format(h))
+    plt.savefig("tract-case-3region.png")
+
+
     
     
 if __name__ == '__main__':
@@ -677,12 +709,14 @@ if __name__ == '__main__':
             evaluate_by_clustering(4)
         elif sys.argv[1] == "cluster-case":
             clustering_case_study(4)
-        elif sys.argv[1] == "visualize-embedding":
+        elif sys.argv[1] == "visualize-embedding-wc":
             for nc in range(2,7):
-                visualizeEmbedding_2D(nc)
+                visualizeEmbedding_2D_withCluster(nc)
+        elif sys.argv[1] == "visualize-embedding":
+            visualizeEmbedding_2D()
         else:
             print "wrong parameter"
     else:
         print "missing parameter"
-        i, l = generateLEHDClusteringlabel(4, "wac")
+        i, l = generateLEHD_ac_clusteringLabel(4, "wac")
         visualizeClusteringResults(i, l, 4)
