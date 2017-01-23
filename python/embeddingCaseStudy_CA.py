@@ -183,6 +183,31 @@ def visualizeEmbedding_2D():
             plt.title("2D visualization at {0}".format(h))
     plt.savefig("CA-case-3region.png")
     
+    
+    
+def getTaxiFlow():
+    flows = {}
+    for h in range(24):
+        f = np.loadtxt("../miscs/taxi-CA-h{0}.matrix".format(h), delimiter=" ")
+        flows[h] = f
+    return flows
+
+
+def visualizeFlow():
+    f = getTaxiFlow()
+    cas = [5,6,7,21,22] # [26, 27, 29, 30] # [8,32,33]
+    plt.figure(figsize=(22,14))
+    for h in range(24):
+        plt.subplot(4,6,h+1)
+        lg = []
+        for ca in cas:
+            plt.plot(f[h][ca-1,:])
+            lg.append(str(ca))
+        plt.legend(lg)
+        plt.title(str(h))
+    
+    
 if __name__ == "__main__":
-    visualizeEmbedding_2D()
+    visualizeFlow()
+#    visualizeEmbedding_2D()
 #    visualizeEmbedding_2D_withCluster(2)
