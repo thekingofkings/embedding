@@ -457,7 +457,7 @@ def getLEHDfeatures_helper(fn, keys):
             ls = l.strip().split(",")
             tid = int(ls[0][5:11])
             if tid in keys:
-                vec = np.array([int(e) for e in ls[1:2]])  # job section 8:28
+                vec = np.array([int(e) for e in ls[8:28]])  # job section 8:28
                 if tid not in acs:
                     acs[tid] = vec
                 else:

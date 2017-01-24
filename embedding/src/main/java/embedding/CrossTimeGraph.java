@@ -24,7 +24,7 @@ public class CrossTimeGraph extends LayeredGraph {
 
     public static CrossTimeGraph constructGraph_tract() {
         Tracts trts = new Tracts();
-        trts.deserialzeTracts(2014);
+        trts.deserialzeTracts(2013);
 
         long t1 = System.currentTimeMillis();
         System.out.println("Start generating cross-time graph...");
@@ -55,7 +55,7 @@ public class CrossTimeGraph extends LayeredGraph {
         int timeStep = 24 / numLayer;   // by default, use uniform divided time slots
         int[] timeIntervals = new int[numLayer+1];
         for (int i = 0; i <= numLayer; i+=timeStep)
-            timeIntervals[i] = i * timeStep;
+            timeIntervals[i] = (i * timeStep)%numLayer;
 
         return constructGraph_CA(timeIntervals);
     }
@@ -67,7 +67,7 @@ public class CrossTimeGraph extends LayeredGraph {
      */
     public static CrossTimeGraph constructGraph_CA(int[] timeIntervals) {
         CommunityAreas cas = new CommunityAreas();
-        cas.deserialzeCAs(2014);
+        cas.deserialzeCAs(2013);
         CrossTimeGraph.numLayer = timeIntervals.length - 1;
 
         long t1 = System.currentTimeMillis();

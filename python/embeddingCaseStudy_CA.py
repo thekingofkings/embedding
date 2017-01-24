@@ -138,17 +138,17 @@ def generate_od_clusteringLabel(ncluster=2):
 def visualizeEmbedding_2D_withCluster(ncluster=3):
     twoGraphEmbeds, twoGRids = retrieveCrossIntervalEmbeddings("../miscs/taxi-deepwalk-CA-usespatial.vec", skipheader=0)
     
-#    gndTid, gndLabels = generate_AC_clusteringLabel(ncluster, "wac")
+    gndTid, gndLabels = generate_AC_clusteringLabel(ncluster, "rac")
 #    gndTid, gndLabels = generatePOIClusteringlabel(ncluster)
-    gndTid, gndLabels = generate_od_clusteringLabel(ncluster)
+#    gndTid, gndLabels = generate_od_clusteringLabel(ncluster)
     clrs = ["b", "r", "g", "w", "c", "b"]
+    print [ len(np.argwhere(gndLabels==i)) for i in range(ncluster)]
     
     
-    
-    plt.figure(figsize=(80,60))
-    plt.suptitle("OD count as ground truth {0} clusters".format(ncluster))
-    for h in range(4):
-        plt.subplot(1,4,h+1)
+    plt.figure(figsize=(40,36))
+    plt.suptitle("RAC count as ground truth {0} clusters".format(ncluster))
+    for h in range(len(twoGRids)):
+        plt.subplot(4,6,h+1)
         for cluster in range(ncluster):
             groupIds = gndTid[np.argwhere(gndLabels==cluster)]
             idx = np.in1d(twoGRids[h], groupIds)
@@ -157,19 +157,22 @@ def visualizeEmbedding_2D_withCluster(ncluster=3):
             ids = twoGRids[h][idx]
             
             plt.scatter(x, y, c=clrs[cluster], hold=True)
+            plt.xlim([-1.0, 1])
+            plt.ylim([-1, 0.5])
             for i, e in enumerate(ids):
                 plt.annotate(s = str(e), xy=(x[i], y[i]), xytext=(-5, 5), textcoords="offset points")
             plt.title("2D visualization at {0}".format(h))
-    plt.savefig("CA-OD-{0}cluster.png".format(ncluster))   
+    plt.savefig("CA-RAC-{0}cluster.png".format(ncluster))   
         
     
 def visualizeEmbedding_2D():
     twoGraphEmbeds, twoGRids = retrieveCrossIntervalEmbeddings("../miscs/taxi-deepwalk-CA-usespatial.vec", skipheader=0)
-    groups = [[5,6,7,21,22], [8,32,33], [26, 27, 29, 30]]
+    groups = [[13,14,15,16], [8,32,33], [44,45,47,48]]
+#    groups = [[5,6,7,21,22], [8,32,33], [26,27,29,30]]
     clrs = ["b", "r", "g", "w", "c", "b"]
     
-    plt.figure(figsize=(22,14))
-    for h in range(24):
+    plt.figure(figsize=(16,12))
+    for h in range(len(twoGRids)):
         plt.subplot(4,6,h+1)
         for i, group in enumerate(groups):
             idx = np.in1d(twoGRids[h], group)
@@ -195,8 +198,9 @@ def getTaxiFlow():
 
 def visualizeFlow():
     f = getTaxiFlow()
-    cas = [5,6,7,21,22] # [26, 27, 29, 30] # [8,32,33]
+    cas = [13,14,15,16] #[44,45,47,48] # [26, 27, 29, 30] # [8,32,33]
     plt.figure(figsize=(22,14))
+    plt.suptitle("Case study for region {0}".format(cas))
     for h in range(24):
         plt.subplot(4,6,h+1)
         lg = []
@@ -205,9 +209,13 @@ def visualizeFlow():
             lg.append(str(ca))
         plt.legend(lg)
         plt.title(str(h))
+    plt.savefig("CA-case-ts-r3.png")
+    
+    for ca in cas:
+        print ca, sum([sum(f[h][ca-1,:]) for h in range(24)])
     
     
 if __name__ == "__main__":
-#    visualizeFlow()
+    visualizeFlow()
 #    visualizeEmbedding_2D()
-    visualizeEmbedding_2D_withCluster(2)
+#    visualizeEmbedding_2D_withCluster(3)

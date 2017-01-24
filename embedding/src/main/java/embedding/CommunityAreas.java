@@ -193,7 +193,7 @@ public class CommunityAreas
     {
 //        serializeCommunityAreas();
         CommunityAreas CAs = new CommunityAreas();
-        CAs.deserialzeCAs(2014);
+        CAs.deserialzeCAs(2013);
         CAs.outputStaticFlowGraph();
         CAs.outputEdgeGraph_LINE();
         CAs.outputAdjacencyMatrix();
