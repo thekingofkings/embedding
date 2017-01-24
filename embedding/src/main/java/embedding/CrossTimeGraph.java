@@ -36,7 +36,7 @@ public class CrossTimeGraph extends LayeredGraph {
                     int w = src.getFlowTo(dst.id, h, h+timeStep-1);
                     if (w > 0)
                         g.addEdge(String.format("%d-%d", h, src.id),
-                                String.format("%d-%d", (h+1)%24, dst.id), w);
+                                String.format("%d-%d", (h+1)% numLayer, dst.id), w);
                 }
             }
         }
@@ -79,7 +79,7 @@ public class CrossTimeGraph extends LayeredGraph {
                     int w = src.getFlowTo(dst.id, timeIntervals[h], timeIntervals[h+1]);
                     if (w > 0)
                         g.addEdge(String.format("%d-%d", h, src.id),
-                                String.format("%d-%d", h, dst.id), w);
+                                String.format("%d-%d", (h+1)%numLayer, dst.id), w);
                 }
             }
         }
