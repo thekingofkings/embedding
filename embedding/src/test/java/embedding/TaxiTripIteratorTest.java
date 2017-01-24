@@ -12,7 +12,10 @@ public class TaxiTripIteratorTest extends TestCase {
 
         assertTrue(tti.fileNames.length >= 1);
 
-        while (tti.hasNext());
+        int cnt = 0;
+        while (tti.hasNext())
+            if (cnt++ > 10000)
+                break;
 
         assertTrue(tti.numBadTrip < tti.numTotalTrip);
     }

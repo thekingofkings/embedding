@@ -147,8 +147,8 @@ def visualizeEmbedding_2D_withCluster(ncluster=3):
     
     plt.figure(figsize=(80,60))
     plt.suptitle("OD count as ground truth {0} clusters".format(ncluster))
-    for h in range(24):
-        plt.subplot(4,6,h+1)
+    for h in range(4):
+        plt.subplot(1,4,h+1)
         for cluster in range(ncluster):
             groupIds = gndTid[np.argwhere(gndLabels==cluster)]
             idx = np.in1d(twoGRids[h], groupIds)
@@ -208,6 +208,6 @@ def visualizeFlow():
     
     
 if __name__ == "__main__":
-    visualizeFlow()
+#    visualizeFlow()
 #    visualizeEmbedding_2D()
-#    visualizeEmbedding_2D_withCluster(2)
+    visualizeEmbedding_2D_withCluster(2)

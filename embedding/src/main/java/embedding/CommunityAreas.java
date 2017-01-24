@@ -233,7 +233,7 @@ class CommunityArea implements Serializable{
 
     public int getFlowTo(int dstId, int hourLow, int hourHigh) {
         int cnt = 0;
-        for (int h = hourLow; h <= hourHigh; h++)
+        for (int h = hourLow; h != hourHigh; h= (h+1)%24)
             cnt += taxiFlows.get(h).getOrDefault(dstId, 0);
         return cnt;
     }

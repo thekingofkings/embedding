@@ -75,7 +75,7 @@ public class DeepWalk {
                 SpatialGraph.numLayer = 8;
             } else {
                 SpatialGraph.numSamples = 80_000;
-                SpatialGraph.numLayer = 24;
+                SpatialGraph.numLayer = 4;
             }
             SpatialGraph.outputSampleSequence(regionLevel);
         } else if (spatialGF.equals("nospatial") && sgSeq.exists()) {
@@ -90,9 +90,10 @@ public class DeepWalk {
                 CrossTimeGraph.numLayer = 8;
             } else {
                 CrossTimeGraph.numSamples = 2_000_000;
-                CrossTimeGraph.numLayer = 24;
+                CrossTimeGraph.numLayer = 4;
             }
-            CrossTimeGraph.outputSampleSequence(regionLevel);
+            int[] intervals = new int[]{22, 5, 11, 16, 22};
+            CrossTimeGraph.outputSampleSequence(regionLevel, intervals);
         }
     }
 

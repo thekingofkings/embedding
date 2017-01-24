@@ -5,6 +5,7 @@ import com.vividsolutions.jts.awt.PointShapeFactory;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -51,17 +52,31 @@ public class CrossTimeGraph extends LayeredGraph {
     }
 
     public static CrossTimeGraph constructGraph_CA() {
+        int timeStep = 24 / numLayer;   // by default, use uniform divided time slots
+        int[] timeIntervals = new int[numLayer+1];
+        for (int i = 0; i <= numLayer; i+=timeStep)
+            timeIntervals[i] = i * timeStep;
+
+        return constructGraph_CA(timeIntervals);
+    }
+
+    /**
+     * Generate cross-time graph with given handpicked time intervals.
+     * @param timeIntervals is an array of starting (inclusive) and ending (exclusive) time.
+     * @return the created cross-time graph.
+     */
+    public static CrossTimeGraph constructGraph_CA(int[] timeIntervals) {
         CommunityAreas cas = new CommunityAreas();
         cas.deserialzeCAs(2014);
+        CrossTimeGraph.numLayer = timeIntervals.length - 1;
 
         long t1 = System.currentTimeMillis();
         System.out.println("Start generating crosstime graph for Communities ...");
-        int timeStemp = 24/ numLayer;
         CrossTimeGraph g = new CrossTimeGraph();
         for (int h = 0; h < numLayer; h++) {
             for (CommunityArea src : cas.communities.values()) {
                 for (CommunityArea dst : cas.communities.values()) {
-                    int w = src.getFlowTo(dst.id, h, h+timeStemp-1);
+                    int w = src.getFlowTo(dst.id, timeIntervals[h], timeIntervals[h+1]);
                     if (w > 0)
                         g.addEdge(String.format("%d-%d", h, src.id),
                                 String.format("%d-%d", h, dst.id), w);
@@ -80,18 +95,36 @@ public class CrossTimeGraph extends LayeredGraph {
     }
 
 
+
     /**
      * Output the sample sequence ({@link CrossTimeGraph#numLayer} nodes each line)
      * For Deepwalk training.
      */
+    public static void outputSampleSequence(String regionLevel, int[] timeIntervals) {
+        LayeredGraph.numLayer = CrossTimeGraph.numLayer;
+        CrossTimeGraph g;
+        if (regionLevel.equals("tract"))
+            g = constructGraph_tract();
+        else// if (regionLevel.equals("CA"))
+            g = constructGraph_CA(timeIntervals);
+        g.initiateAliasTables();
+        sampleSequenceHelper(g, regionLevel);
+    }
+
+
     public static void outputSampleSequence(String regionLevel) {
-        LayeredGraph.numLayer = SpatialGraph.numLayer;
+        LayeredGraph.numLayer = CrossTimeGraph.numLayer;
         CrossTimeGraph g;
         if (regionLevel.equals("tract"))
             g = constructGraph_tract();
         else// if (regionLevel.equals("CA"))
             g = constructGraph_CA();
         g.initiateAliasTables();
+        sampleSequenceHelper(g, regionLevel);
+    }
+
+
+    public static void sampleSequenceHelper(CrossTimeGraph g, String regionLevel) {
         long t2 = System.currentTimeMillis();
         System.out.println("Starting sequence sampling...");
 
@@ -113,6 +146,8 @@ public class CrossTimeGraph extends LayeredGraph {
         long t3 = System.currentTimeMillis();
         System.out.format("Sampling %d sequences finished in %d seconds.\n", numSamples, (t3-t2)/1000);
     }
+
+
 
     public static void main(String[] argv) {
         numSamples = 2_000_000; // number of nodes * 1000
