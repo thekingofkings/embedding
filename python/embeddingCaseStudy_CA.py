@@ -171,20 +171,23 @@ def visualizeEmbedding_2D():
 #    groups = [[5,6,7,21,22], [8,32,33], [26,27,29,30]]
     clrs = ["b", "r", "g", "w", "c", "b"]
     
-    plt.figure(figsize=(16,12))
-    for h in range(len(twoGRids)):
-        plt.subplot(4,6,h+1)
+    plt.figure(figsize=(12,6))
+    for i, h in enumerate([8,9,16,17,21,22,0,1]): #range(len(twoGRids)):
+        f = plt.subplot(2,4,i+1)
         for i, group in enumerate(groups):
             idx = np.in1d(twoGRids[h], group)
             x = twoGraphEmbeds[h][idx,0]
             y = twoGraphEmbeds[h][idx,1]
             ids = twoGRids[h][idx]
             
-            plt.scatter(x, y, c=clrs[i], hold=True)
+            plt.scatter(x, y, s=40, c=clrs[i], hold=True)
             for j, e in enumerate(ids):
-                plt.annotate(s = str(e), xy=(x[j], y[j]), xytext=(-5, 5), textcoords="offset points")
-            plt.title("2D visualization at {0}".format(h))
-    plt.savefig("CA-case-3region.png")
+                plt.annotate(s = str(e), xy=(x[j], y[j]), xytext=(-10, 5), textcoords="offset points", fontsize=14)
+            plt.title("{0}:00".format(h), fontsize=16)
+            f.tick_params(axis="both", labelsize=10)
+    
+    plt.tight_layout()
+    plt.savefig("CA-case-3region.pdf")
     
     
     
@@ -202,7 +205,7 @@ def visualizeFlow():
     plt.figure(figsize=(22,14))
     plt.suptitle("Case study for region {0}".format(cas))
     for h in range(24):
-        plt.subplot(4,6,h+1)
+        f = plt.subplot(4,6,h+1)
         lg = []
         for ca in cas:
             plt.plot(f[h][ca-1,:])
@@ -216,6 +219,6 @@ def visualizeFlow():
     
     
 if __name__ == "__main__":
-    visualizeFlow()
-#    visualizeEmbedding_2D()
+#    visualizeFlow()
+    visualizeEmbedding_2D()
 #    visualizeEmbedding_2D_withCluster(3)
