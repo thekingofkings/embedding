@@ -167,9 +167,9 @@ def visualizeEmbedding_2D_withCluster(ncluster=3):
     
 def visualizeEmbedding_2D():
     twoGraphEmbeds, twoGRids = retrieveCrossIntervalEmbeddings("../miscs/taxi-deepwalk-CA-usespatial.vec", skipheader=0)
-    groups = [[13,14,15,16], [8,32,33], [44,45,47,48]]
+    groups = [[13,14,15,16], [8,32,33], [44,45,47,48], [77]]
 #    groups = [[5,6,7,21,22], [8,32,33], [26,27,29,30]]
-    clrs = ["b", "r", "g", "w", "c", "b"]
+    clrs = ["b", "r", "g", "c", "w", "k"]
     
     plt.figure(figsize=(16,12))
     for h in range(len(twoGRids)):
@@ -216,6 +216,6 @@ def visualizeFlow():
     
     
 if __name__ == "__main__":
-    visualizeFlow()
-#    visualizeEmbedding_2D()
+#    visualizeFlow()
+    visualizeEmbedding_2D()
 #    visualizeEmbedding_2D_withCluster(3)

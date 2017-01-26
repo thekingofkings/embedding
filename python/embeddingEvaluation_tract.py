@@ -43,12 +43,12 @@ def generatePOIlabel_helper(ordKey, tract_poi, poi_type):
     label = np.array([1 if val >= median else 0 for val in poi_cnt])
     assert len(label) == len(ordKey)
     return label, median >= 1
-    
-    
+
+
 def generatePOIBinarylabel(ordKey, tract_poi):
-    header = ['Food', 'Residence', 'Travel', 'Arts & Entertainment', 
-        'Outdoors & Recreation', 'College & Education', 'Nightlife', 
-        'Professional', 'Shops', 'Event']
+    header = ['Food', 'Residence', 'Travel', 'Arts & Entertainment',
+              'Outdoors & Recreation', 'College & Education', 'Nightlife',
+              'Professional', 'Shops', 'Event']
         
     L = {}
     for h in header:
@@ -56,8 +56,8 @@ def generatePOIBinarylabel(ordKey, tract_poi):
         if flag:
             L[h] = l
     return L
-    
-    
+
+
 def generatePairWiseGT(rids, tract_poi):
     header = ['Food', 'Residence', 'Travel', 'Arts & Entertainment', 
         'Outdoors & Recreation', 'College & Education', 'Nightlife', 
@@ -719,4 +719,4 @@ if __name__ == '__main__':
     else:
         print "missing parameter"
         i, l = generateLEHD_ac_clusteringLabel(4, "wac")
-        visualizeClusteringResults(i, l, 4)
+        visualizeClusteringResults(i, l, 4, "sometitle")
