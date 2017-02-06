@@ -57,6 +57,7 @@ public class DeepWalk {
         log.info("Building model");
         Word2Vec w2v = new Word2Vec.Builder().minWordFrequency(2)
                 .layerSize(layerSize).iterations(1).windowSize(LayeredGraph.numLayer)
+                .negativeSample(5).workers(8)
                 .iterate(itr).tokenizerFactory(t).build();
 
         log.info("Fitting w2v model");

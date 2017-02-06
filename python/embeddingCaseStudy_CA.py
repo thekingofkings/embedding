@@ -181,6 +181,8 @@ def visualizeEmbedding_2D():
             ids = twoGRids[h][idx]
             
             plt.scatter(x, y, s=40, c=clrs[i], hold=True)
+#            plt.xlim([-3.0, 0.6])
+#            plt.ylim([-2, 0.5])
             for j, e in enumerate(ids):
                 plt.annotate(s = str(e), xy=(x[j], y[j]), xytext=(-10, 5), textcoords="offset points", fontsize=14)
             plt.title("{0}:00".format(h), fontsize=16)
