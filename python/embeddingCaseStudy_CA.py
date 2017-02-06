@@ -167,7 +167,7 @@ def visualizeEmbedding_2D_withCluster(ncluster=3):
     
 def visualizeEmbedding_2D():
     twoGraphEmbeds, twoGRids = retrieveCrossIntervalEmbeddings("../miscs/taxi-deepwalk-CA-usespatial.vec", skipheader=0)
-    groups = [[13,14,15,16], [8,32,33], [44,45,47,48], [77]]
+    groups = [[13,14,15,16], [8,32,33], [44,45,47,48], [76]]
 #    groups = [[5,6,7,21,22], [8,32,33], [26,27,29,30]]
     clrs = ["b", "r", "g", "c", "w", "k"]
     
