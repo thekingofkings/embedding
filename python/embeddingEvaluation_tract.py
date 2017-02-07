@@ -744,6 +744,7 @@ def pairwise_similarity_evaluation_plot():
     orders = [4, 5, 0, 3, 2, 1]
     lsty = ["x", "v", "^", "s", "o", "+"]
     res = pickle.load(open("ndcg.pickle"))
+    plt.rc("axes", linewidth=2)
     plt.figure(figsize=(8,6))
     for i in range(res.shape[1]):
         plt.plot(x, res[:,orders[i]], lsty[orders[i]], linewidth=4, ls="-", ms=10, mew=3, mec="k")
@@ -753,7 +754,9 @@ def pairwise_similarity_evaluation_plot():
     plt.ylabel("$nDCG$", fontsize=24)
     plt.tick_params(labelsize=18)
     plt.axis([2, 43, 0.18, 0.85])
+    plt.grid(b=True, axis="both", lw=1)
     plt.savefig("pairwise-similarity.pdf")
+    
     
     
     
