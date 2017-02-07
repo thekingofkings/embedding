@@ -739,6 +739,22 @@ def visualizeEmbedding_2D():
     plt.savefig("tract-case-3region.png")
 
 
+
+def pairwise_similarity_evaluation_plot():
+    orders = [4, 5, 0, 3, 2, 1]
+    lsty = ["x", "v", "^", "s", "o", "+"]
+    res = pickle.load(open("ndcg.pickle"))
+    plt.figure(figsize=(8,6))
+    for i in range(res.shape[1]):
+        plt.plot(x, res[:,orders[i]], lsty[orders[i]], linewidth=4, ls="-", ms=10, mew=3, mec="k")
+    plt.legend(["$HDGE$", "$DGE_{spatial}$", "$LINE_{static}$", "$DGE_{transition}$", "$MF$", "$LINE_{slotted}$"], loc="best",
+               fontsize=20, ncol=2)
+    plt.xlabel("$k$", fontsize=24)
+    plt.ylabel("$nDCG$", fontsize=24)
+    plt.tick_params(labelsize=18)
+    plt.axis([2, 43, 0.18, 0.85])
+    plt.savefig("pairwise-similarity.pdf")
+    
     
     
 if __name__ == '__main__':
@@ -753,11 +769,14 @@ if __name__ == '__main__':
                 res.append(evalute_by_pairwise_similarity(k))
             res = np.array(res)
             
-            pickle.dump(res, open("ndcg.pickle"))
+            pickle.dump(res, open("ndcg.pickle", 'w'))
             plt.figure()
             for i in range(res.shape[1]):
                 plt.plot(x, res[:,i])
             plt.legend(["static", "line", "mf", "transition", "transition+spatial", "spatial"], loc="best")
+        elif sys.argv[1] == "pairwise-eval-plot":
+            # plot the pairwise evaluation results.
+            pairwise_similarity_evaluation_plot()
         elif sys.argv[1] == "pairwise-case":
             casestudy_pairwise_similarity()
         elif sys.argv[1] == "cluster-eval":
@@ -770,12 +789,7 @@ if __name__ == '__main__':
         elif sys.argv[1] == "visualize-embedding":
             visualizeEmbedding_2D()
         else:
-            res = pickle.load(open("ndcg.pickle"))
-            plt.figure()
-            for i in range(res.shape[1]):
-                print res[:,i]
-                plt.plot(x, res[:,i])
-            plt.legend(["static", "line", "mf", "transition", "transition+spatial", "spatial"], loc="best")
+            print "wrong parameter"
     else:
         print "missing parameter"
         i, l = generateLEHD_ac_clusteringLabel(4, "wac")
