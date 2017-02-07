@@ -316,7 +316,7 @@ public class Tracts {
 
     public static void generateEdgeFileForEmbedding() {
         Tracts trts = new Tracts();
-        trts.deserialzeTracts(2014);
+        trts.deserialzeTracts(2013);
         trts.outputEdgeFile();  // for graph embedding LINE
         trts.outputAdjacencyMatrix();   // for matrix factorization
 //        trts.outputEdgeGraph_crossInterval();

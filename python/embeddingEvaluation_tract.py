@@ -59,6 +59,13 @@ def generatePOIBinarylabel(ordKey, tract_poi):
 
 
 def generatePairWiseGT(rids, tract_poi):
+    """
+    Pairwise evaluation use a ranking as ground truth.
+    
+    Use binary relevance score.
+
+    The top-k neighbors are selected as relevant (1), and others are not (0).
+    """
     header = ['Food', 'Residence', 'Travel', 'Arts & Entertainment', 
         'Outdoors & Recreation', 'College & Education', 'Nightlife', 
         'Professional', 'Shops', 'Event']
@@ -77,6 +84,7 @@ def generatePairWiseGT(rids, tract_poi):
         gnd_vec[k] = pv
     
     gnd_pair = {}
+    gnd_est = {}
     for k in rids:
         cosDist = []
         for k2 in rids:
@@ -84,12 +92,13 @@ def generatePairWiseGT(rids, tract_poi):
                 continue
             c = cosine(gnd_vec[k], gnd_vec[k2])
             if np.isnan(c):
-                c = 2
+                c = -1
             cosDist.append((k2, c))
         cosDist.sort(key=lambda x: x[1])
-        gnd_pair[k] = [cosDist[i][0] for i in range(3)]
+        gnd_est[k] = cosDist
+        gnd_pair[k] = [cosDist[i][0] for i in range(30)]
             
-    return gnd_pair
+    return gnd_pair, gnd_est
         
             
     
@@ -173,7 +182,11 @@ def pairwiseEstimator(features, rids):
         for i2, k2 in enumerate(rids):
             if k2 == k:
                 continue
-            pd.append( (k2, cosine(features[i], features[i2])) )
+            c = cosine(features[i], features[i2])
+            if np.isnan(c):
+                pd.append((k2, -1))
+            else:
+                pd.append((k2, c))
         pd.sort(key=lambda x: x[1])
         estimates[k] = pd
     return estimates
@@ -216,18 +229,33 @@ def evalute_by_binary_classification():
             
     
 
-def topK_accuracy(k, estimator, pair_gnd):
+def precision_atK(k, estimator, pair_gnd):
     """
     Return the precision and recall with top k pairs.
     """
-    cnt = 0
+    PatK = 0.0
     total = len(pair_gnd)
     for rid in estimator:
         knn = [estimator[rid][i][0] for i in range(k)]
-        if len(np.intersect1d(pair_gnd[rid], knn)) != 0:
-            cnt += 1
-    return float(cnt) / total
+        nr = len(np.intersect1d(pair_gnd[rid], knn))
+        PatK += nr / float(k)
+    return PatK / total
     
+
+def dcg_atK(k, neighbors):
+    relv = [1-neighbors[i][1] for i in range(k)]
+    return np.sum([relv[i-1] / np.log2(i+1) for i in range(1, len(relv)+1)])
+
+
+def ndcg_atK(k, estimator, gnd_est):
+    ndcgK = 0.0
+    total = len(gnd_est)
+    for rid in estimator:
+        dcg_max = dcg_atK(k, gnd_est[rid])
+        dcg = dcg_atK(k, estimator[rid])
+        ndcgK += dcg / dcg_max
+    return ndcgK / total
+
 
 
 def topKcover_case(k, estimator, pair_gnd, cmp_estimator):
@@ -261,50 +289,67 @@ def evalute_by_pairwise_similarity(topk=20):
         nmRid = pickle.load(fin2)
         
     
-    pair_gnd = generatePairWiseGT(ordKey, tract_poi)
+    pair_gnd, gnd_est = generatePairWiseGT(ordKey, tract_poi)
         
     embedFeatures, embedRid = retrieveEmbeddingFeatures()
+    geoFeatures, geoRid = retrieveCrossIntervalEmbeddings("../miscs/taxi-deepwalk-tract-onlyspatial.vec", skipheader=0)
     crosstimeFeatures, cteRid = retrieveCrossIntervalEmbeddings("../miscs/taxi-deepwalk-tract-nospatial.vec", skipheader=0)
     twoGraphEmbeds, twoGRids = retrieveCrossIntervalEmbeddings("../miscs/taxi-deepwalk-tract-usespatial.vec", skipheader=0)
     
     features, rid = retrieveEmbeddingFeatures_helper("../miscs/taxi-all.vec")
     pe_all_embed = pairwiseEstimator(features, rid)
-    acc = topK_accuracy(20, pe_all_embed, pair_gnd)
-    print "Acc of static graph", acc
+    acc = ndcg_atK(topk, pe_all_embed, gnd_est)
+    print "NDCG of static graph", acc
     
     ACC1 = []
     ACC2 = []
     ACC3 = []
     ACC4 = []
+    ACC5 = []
     plt.figure()
     for h in range(numLayer):
         
         pe_embed = pairwiseEstimator(embedFeatures[h], embedRid[h])
         pe_mf = pairwiseEstimator(nmfeatures[h], nmRid[h])
+        pe_geo = pairwiseEstimator(geoFeatures[h], geoRid[h])
         pe_cte = pairwiseEstimator(crosstimeFeatures[h], cteRid[h])
         pe_twoG = pairwiseEstimator(twoGraphEmbeds[h], twoGRids[h])
         
-        cov1 = len(embedRid[h]) / float(len(ordKey))
-        cov2 = len(nmRid[h]) / float(len(ordKey))
-        cov3 = len(cteRid[h]) / float(len(ordKey))
-        cov4 = len(twoGRids[h]) / float(len(ordKey))
+        n = float(len(ordKey))
+        cov1 = len(embedRid[h]) / n
+        cov2 = len(nmRid[h]) / n
+        cov3 = len(cteRid[h]) / n
+        cov4 = len(twoGRids[h]) / n
+        cov5 = len(geoRid[h]) / n
         
-        acc1 = topK_accuracy(topk, pe_embed, pair_gnd)
-        acc2 = topK_accuracy(topk, pe_mf, pair_gnd)
-        acc3 = topK_accuracy(topk, pe_cte, pair_gnd)
-        acc4 = topK_accuracy(topk, pe_twoG, pair_gnd)
+#        acc1 = precision_atK(topk, pe_embed, pair_gnd)
+#        acc2 = precision_atK(topk, pe_mf, pair_gnd)
+#        acc3 = precision_atK(topk, pe_cte, pair_gnd)
+#        acc4 = precision_atK(topk, pe_twoG, pair_gnd)
+
+        acc1 = ndcg_atK(topk, pe_embed, gnd_est)
+        acc2 = ndcg_atK(topk, pe_mf, gnd_est)
+        acc3 = ndcg_atK(topk, pe_cte, gnd_est)
+        acc4 = ndcg_atK(topk, pe_twoG, gnd_est)
+        acc5 = ndcg_atK(topk, pe_geo, gnd_est)
+
         
         ACC1.append(acc1)
         ACC2.append(acc2)
         ACC3.append(acc3)
         ACC4.append(acc4)
-        print h, cov1, acc1, cov2, acc2, cov3, acc3, cov4, acc4
+        ACC5.append(acc5)
+        print h, cov1, acc1, cov2, acc2, cov3, acc3, cov4, acc4, cov5, acc5
     print np.mean(ACC1), np.mean(ACC2), np.mean(ACC3), np.mean(ACC4)
     plt.plot(ACC1)
     plt.plot(ACC2)
     plt.plot(ACC3)
     plt.plot(ACC4)
-    plt.legend(["Embedding", "MF", "CrossTime", "CT+Spatial"], loc='best')
+    plt.plot(ACC5)
+    plt.legend(["LINE", "MF", "Transition", "Transition+Spatial", "Spatial"], loc='best')
+    plt.title("nDCG@{0} for pairwise evaluation".format(topk))
+    
+    return acc, np.mean(ACC1), np.mean(ACC2), np.mean(ACC3), np.mean(ACC4), np.mean(ACC5)
     
         
         
@@ -325,7 +370,7 @@ def casestudy_pairwise_similarity():
         print "Hour:", h
         pe_embed = pairwiseEstimator(embedFeatures[h], embedRid[h])
         pe_mf = pairwiseEstimator(nmfeatures[h], nmRid[h])
-        pair_gnd = generatePairWiseGT(embedRid[h], tract_poi)
+        pair_gnd, gnd_vec = generatePairWiseGT(embedRid[h], tract_poi)
         topKcover_case(8, pe_embed, pair_gnd, pe_mf)
 
         
@@ -702,7 +747,17 @@ if __name__ == '__main__':
         if sys.argv[1] == "binary":
             evalute_by_binary_classification()
         elif sys.argv[1] == "pairwise-eval":
-            evalute_by_pairwise_similarity(10)
+            res = []
+            x = [5, 10, 20, 30, 40]
+            for k in x:
+                res.append(evalute_by_pairwise_similarity(k))
+            res = np.array(res)
+            
+            pickle.dump(res, open("ndcg.pickle"))
+            plt.figure()
+            for i in range(res.shape[1]):
+                plt.plot(x, res[:,i])
+            plt.legend(["static", "line", "mf", "transition", "transition+spatial", "spatial"], loc="best")
         elif sys.argv[1] == "pairwise-case":
             casestudy_pairwise_similarity()
         elif sys.argv[1] == "cluster-eval":
@@ -715,7 +770,12 @@ if __name__ == '__main__':
         elif sys.argv[1] == "visualize-embedding":
             visualizeEmbedding_2D()
         else:
-            print "wrong parameter"
+            res = pickle.load(open("ndcg.pickle"))
+            plt.figure()
+            for i in range(res.shape[1]):
+                print res[:,i]
+                plt.plot(x, res[:,i])
+            plt.legend(["static", "line", "mf", "transition", "transition+spatial", "spatial"], loc="best")
     else:
         print "missing parameter"
         i, l = generateLEHD_ac_clusteringLabel(4, "wac")

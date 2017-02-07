@@ -10,10 +10,7 @@ import org.opengis.feature.simple.SimpleFeature;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.AbstractMap;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 /**
  * Unit test for Tracts class.
@@ -94,17 +91,24 @@ public class TractsTest extends TestCase {
         TaxiTrip.parseTaxiFilesHelper(new File(TaxiTrip.tripFilePath), (file, s) -> s.matches("201[34]-.*"), trips);
 
         trts.mapTripsIntoTracts(trips.iterator());
-        trts.serializeTracts(2014);
+        trts.serializeTracts(20140);
         AbstractMap<Integer, Tract> org_trts = trts.tracts;
         int org_nts = Tracts.numTimeSlot;
 
         Tracts trts2 = new Tracts();
-        trts2.deserialzeTracts(2014);
+        trts2.deserialzeTracts(20140);
         AbstractMap<Integer, Tract> new_trts = trts2.tracts;
 
         assertEquals(Tracts.numTimeSlot, org_nts);
 //        assertEquals(org_trts.get());
+        int cnt = 0;
+        for (Tract trct : trts2.tracts.values()) {
+            for (Map<Integer, Integer> flows : trct.taxiFlows) {
+                cnt += flows.values().stream().mapToInt(Integer::intValue).sum();
+            }
+        }
 
+        assertEquals(cnt, 282466);
     }
 
 }

@@ -3,6 +3,7 @@ package embedding;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.deeplearning4j.text.sentenceiterator.FileSentenceIterator;
+import org.deeplearning4j.text.sentenceiterator.LineSentenceIterator;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
@@ -42,16 +43,29 @@ public class DeepWalk {
 //                .allowCrossDeviceAccess(false);
 
 
-        File seqDir = new File(String.format("../miscs/deepwalkseq-%s", regionLevel));
+        SentenceIterator itr;
+        if (spatialGF.equals("usespatial")) {
+            File seqDir = new File(String.format("../miscs/deepwalkseq-%s", regionLevel));
+            itr = new FileSentenceIterator(seqDir);
+        } else if (spatialGF.equals("nospatial")) {
+            File seqFile = new File(String.format("../miscs/deepwalkseq-%s/taxi-crosstime.seq", regionLevel));
+            itr = new LineSentenceIterator(seqFile);
+        } else if (spatialGF.equals("onlyspatial")) {
+            File seqFile = new File(String.format("../miscs/deepwalkseq-%s/taxi-spatial.seq", regionLevel));
+            itr = new LineSentenceIterator(seqFile);
+        }else {
+            itr = null;
+        }
+
         String out = String.format("../miscs/taxi-deepwalk-%s-%s.vec", regionLevel, spatialGF);
         int layerSize = 20;
-        if (regionLevel.equals("CA"))
-            layerSize = 2;
-        else if (regionLevel.equals("tract"))
-            layerSize = 2;
+//        if (regionLevel.equals("CA"))
+//            layerSize = 2;
+//        else if (regionLevel.equals("tract"))
+//            layerSize = 2;
 
         log.info("Load and vectorize");
-        SentenceIterator itr = new FileSentenceIterator(seqDir);
+
         TokenizerFactory t = new DefaultTokenizerFactory();
 
         log.info("Building model");
@@ -69,23 +83,21 @@ public class DeepWalk {
 
     public static void checkInputFile(String regionLevel, String spatialGF) {
         File sgSeq = new File(String.format("../miscs/deepwalkseq-%s/taxi-spatial.seq", regionLevel));
-        if (spatialGF.equals("usespatial") && !sgSeq.exists()) {
+        if ((spatialGF.equals("usespatial") || spatialGF.equals("onlyspatial")) && !sgSeq.exists()) {
             System.out.format("The spatial graph samples for %s do not exist, but we need it! Generating ...\n", regionLevel);
             if (regionLevel.equals("tract")) {
-                SpatialGraph.numSamples = 1_000_000;
+                SpatialGraph.numSamples = 100_000;
                 SpatialGraph.numLayer = 8;
             } else {
                 SpatialGraph.numSamples = 80_000;
                 SpatialGraph.numLayer = 24;
             }
             SpatialGraph.outputSampleSequence(regionLevel);
-        } else if (spatialGF.equals("nospatial") && sgSeq.exists()) {
-            System.out.format("The spatial graph samples for %s exist, but we do not need it! Deleting ...\n", regionLevel);
-            sgSeq.delete();
         }
+
         File ctSeq = new File(String.format("../miscs/deepwalkseq-%s/taxi-crosstime.seq", regionLevel));
-        if (!ctSeq.exists()) {
-            System.out.format("The crosstime graph samples for %s do not exists! Generating ...\n", regionLevel);
+        if ((spatialGF.equals("nospatial") || spatialGF.equals("usespatial")) && !ctSeq.exists()) {
+            System.out.format("The transition graph samples for %s do not exists! Generating ...\n", regionLevel);
             if (regionLevel.equals("tract")) {
                 CrossTimeGraph.numSamples = 7_000_000;
                 CrossTimeGraph.numLayer = 8;
@@ -114,7 +126,7 @@ public class DeepWalk {
             }
             if (argv.length > 1) {
                 spatialGF = argv[1];
-                System.out.println("word2vec use only crosstime graph.");
+                System.out.format("Spatial graph use or not: %s.\n", spatialGF);
             }
             checkInputFile(regionLevel, spatialGF);
             learnEmbedding(regionLevel, spatialGF);
