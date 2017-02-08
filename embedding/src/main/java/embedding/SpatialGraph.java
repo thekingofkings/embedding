@@ -76,7 +76,7 @@ public class SpatialGraph extends LayeredGraph {
             }
         }
 
-        g.keepNearestKVertices(15);
+        g.keepNearestKVertices(10);
 
         g.sourceVertices = new LinkedList<>((g.allVertices.values()));
         g.sourceWeightSum = g.sourceVertices.stream().mapToDouble(v -> v.outDegree).sum();

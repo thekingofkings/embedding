@@ -166,14 +166,19 @@ def visualizeEmbedding_2D_withCluster(ncluster=3):
         
     
 def visualizeEmbedding_2D():
-    twoGraphEmbeds, twoGRids = retrieveCrossIntervalEmbeddings("../miscs/taxi-deepwalk-CA-usespatial.vec", skipheader=0)
+    twoGraphEmbeds, twoGRids = retrieveCrossIntervalEmbeddings("../miscs/taxi-deepwalk-CA-usespatial-2D.vec", skipheader=0)
     groups = [[13,14,15,16], [8,32,33], [44,45,47,48], [76]]
 #    groups = [[5,6,7,21,22], [8,32,33], [26,27,29,30]]
     clrs = ["b", "r", "g", "c", "w", "k"]
     
     plt.figure(figsize=(12,6))
-    for i, h in enumerate([8,9,16,17,21,22,0,1]): #range(len(twoGRids)):
-        f = plt.subplot(2,4,i+1)
+    for k, h in enumerate([7,8,9,16,17,18,21,22]): # enumerate(range(len(twoGRids))): 
+        f = plt.subplot(2,4,k+1)
+        
+        xr = 0
+        yr = 0
+        xo = 0
+        yo = 0
         for i, group in enumerate(groups):
             idx = np.in1d(twoGRids[h], group)
             x = twoGraphEmbeds[h][idx,0]
@@ -184,9 +189,30 @@ def visualizeEmbedding_2D():
 #            plt.xlim([-3.0, 0.6])
 #            plt.ylim([-2, 0.5])
             for j, e in enumerate(ids):
-                plt.annotate(s = str(e), xy=(x[j], y[j]), xytext=(-10, 5), textcoords="offset points", fontsize=14)
-            plt.title("{0}:00".format(h), fontsize=16)
-            f.tick_params(axis="both", labelsize=10)
+                if e in [76, 47]:
+                    plt.annotate(s = str(e), xy=(x[j], y[j]), xytext=(-2, -15), textcoords="offset points", fontsize=14)
+                elif e in [14,15,16]:
+                    xr += x[j]
+                    yr += y[j]
+                elif e in [8, 32, 33]:
+                    xo += x[j]
+                    yo += y[j]
+                else:
+                    if k == 0:
+                        if e == 13:
+                            plt.annotate(s = str(e), xy=(x[j], y[j]), xytext=(-2, -15), textcoords="offset points", fontsize=14)
+                        else:
+                            plt.annotate(s = str(e), xy=(x[j], y[j]), xytext=(0, -15), textcoords="offset points", fontsize=14)
+        
+            
+        
+        if k == 0:
+            plt.annotate(s = "14,15,16", xy=(xr/3, yr/3), xytext=(5, 3), textcoords="offset points", fontsize=14)
+            plt.annotate(s = "8,32,33", xy=(xo/3, yo/3), xytext=(-50, 8), textcoords="offset points", fontsize=14)
+                    
+            
+        plt.title("{0}:00".format(h), fontsize=16)
+        f.tick_params(axis="both", labelsize=10)
     
     plt.tight_layout()
     plt.savefig("CA-case-3region.pdf")
