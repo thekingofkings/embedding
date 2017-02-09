@@ -22,6 +22,7 @@ import numpy as np
 import nimfa
 from embeddingEvaluation_tract import retrieveEmbeddingFeatures_helper, retrieveCrossIntervalEmbeddings
 import pickle
+import sys
 
 
 def NMFfeatures_helper(h):    
@@ -29,12 +30,13 @@ def NMFfeatures_helper(h):
     d1, d2 = f.shape
     assert d1 == d2 and d1 == 77
     
-    nmf = nimfa.Snmf(f, rank=4, max_iter=100) #, update="divergence", objective="conn", conn_change=50)
+    nmf = nimfa.Nmf(f, rank=4, max_iter=100) #, update="divergence", objective="conn", conn_change=50)
     nmf_fit = nmf()
     src = nmf_fit.basis()
     dst = nmf_fit.coef()
-    
-    return np.concatenate( (src, dst.T), axis=1 )
+    res = np.concatenate( (src, dst.T), axis=1 )
+    assert res.shape == (77, 8)
+    return res
   
 
 def getNMFfeatures():
@@ -58,20 +60,27 @@ def getLINEembeddingFeatures():
     return res
     
     
-def getDeepwalkEmbeddingFeatures():
+def getDeepwalkEmbeddingFeatures(Spatial):
     res = {}
-    features, ids = retrieveCrossIntervalEmbeddings("../miscs/taxi-deepwalk-CA-usespatial.vec", skipheader=0)
+    emptyEmbedding = np.zeros((8,))
+    features, ids = retrieveCrossIntervalEmbeddings("../miscs/taxi-deepwalk-CA-{0}.vec".format(Spatial), skipheader=0)
     for h in range(24):
         sids = np.argsort(ids[h])
-        assert len(sids) == 77
         res[h] = features[h][sids, :]
+        
+        if len(sids) != 77:
+            print len(sids), h
+            for i in range(1, 78):
+                if i not in ids[h]:
+                    res[h] = np.insert(res[h], i-1, emptyEmbedding, axis=0)
+        assert res[h].shape == (77, 8)
     return res
 
 
 if __name__ == "__main__":
     mf = getNMFfeatures()
     line = getLINEembeddingFeatures()
-    dw = getDeepwalkEmbeddingFeatures()
+    dw = getDeepwalkEmbeddingFeatures(sys.argv[1])
     with open("../miscs/CAflowFeatures.pickle", "w") as fout:
         pickle.dump(mf, fout)
         pickle.dump(line, fout)

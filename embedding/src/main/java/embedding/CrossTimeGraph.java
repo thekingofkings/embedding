@@ -24,7 +24,7 @@ public class CrossTimeGraph extends LayeredGraph {
 
     public static CrossTimeGraph constructGraph_tract() {
         Tracts trts = new Tracts();
-        trts.deserialzeTracts(2013);
+        trts.deserialzeTracts(DeepWalk.Year);
 
         long t1 = System.currentTimeMillis();
         System.out.println("Start generating cross-time graph...");

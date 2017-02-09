@@ -22,6 +22,7 @@ import java.io.File;
  * Created by kok on 1/2/17.
  */
 public class DeepWalk {
+    public static int Year = 2013;
     private static Logger log = LoggerFactory.getLogger(DeepWalk.class);
 
     public static void learnEmbedding() throws Exception {
@@ -60,7 +61,7 @@ public class DeepWalk {
         String out = String.format("../miscs/taxi-deepwalk-%s-%s.vec", regionLevel, spatialGF);
         int layerSize = 20;
         if (regionLevel.equals("CA"))
-            layerSize = 8;
+            layerSize = 6;
         else if (regionLevel.equals("tract"))
             layerSize = 20;
 
@@ -102,7 +103,7 @@ public class DeepWalk {
                 CrossTimeGraph.numSamples = 7_000_000;
                 CrossTimeGraph.numLayer = 8;
             } else {
-                CrossTimeGraph.numSamples = 2_000_000;
+                CrossTimeGraph.numSamples = 8_000_000;
                 CrossTimeGraph.numLayer = 24;
             }
 //            int[] intervals = new int[]{22, 5, 11, 16, 22};
@@ -127,6 +128,9 @@ public class DeepWalk {
             if (argv.length > 1) {
                 spatialGF = argv[1];
                 System.out.format("Spatial graph use or not: %s.\n", spatialGF);
+            }
+            if (argv.length > 2) {
+                DeepWalk.Year = Integer.parseInt(argv[2]);
             }
             checkInputFile(regionLevel, spatialGF);
             learnEmbedding(regionLevel, spatialGF);
