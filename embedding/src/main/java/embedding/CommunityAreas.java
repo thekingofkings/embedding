@@ -24,6 +24,7 @@ public class CommunityAreas
      *      3. COMMUNITY (name: string)
      */
     static final String shapeFilePath = "../data/ChiCA_gps/ChiCaGPS.shp";
+    static int Year = 2013;
 
     public AbstractMap<Integer, CommunityArea> communities;
 
@@ -112,19 +113,21 @@ public class CommunityAreas
     }
 
     public void deserialzeCAs(int year) {
+        System.out.format("Deserialize CAs with flow in %d.\n", year);
         try {
             ObjectInputStream ois = new ObjectInputStream(new FileInputStream(String.format("../miscs/CA-serialize-%d.seq", year)));
             communities = (HashMap<Integer, CommunityArea>) ois.readObject();
+            ois.close();
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
 
-    private void outputStaticFlowGraph() {
+    private void outputStaticFlowGraph(int year) {
         try {
-            BufferedWriter fout = new BufferedWriter(new FileWriter("../miscs/taxi-CA-static.matrix"));
-            BufferedWriter fout2 = new BufferedWriter(new FileWriter("../miscs/taxi-CA-static.od"));
+            BufferedWriter fout = new BufferedWriter(new FileWriter(String.format("../miscs/%d/taxi-CA-static.matrix", year)));
+            BufferedWriter fout2 = new BufferedWriter(new FileWriter(String.format("../miscs/%d/taxi-CA-static.od", year)));
             for (int i = 1; i <= communities.size(); i++) {
                 List<String> row = new LinkedList<>();
                 for (int j = 1; j <= communities.size(); j++) {
@@ -142,10 +145,11 @@ public class CommunityAreas
         }
     }
 
-    private void outputAdjacencyMatrix() {
+    private void outputAdjacencyMatrix(int year) {
         try {
             for (int hour = 0; hour < 24; hour ++) {
-                BufferedWriter fout = new BufferedWriter(new FileWriter(String.format("../miscs/taxi-CA-h%d.matrix", hour)));
+                BufferedWriter fout = new BufferedWriter(new FileWriter(String.format("../miscs/%d/taxi-CA-h%d.matrix",
+                        year, hour)));
                 for (int i = 1; i <= communities.size(); i++) {
                     List<String> row = new LinkedList<>();
                     for (int j = 1; j <= communities.size(); j++) {
@@ -164,10 +168,11 @@ public class CommunityAreas
     /**
      * Generate edge graph for LINE embedding learning
      */
-    public void outputEdgeGraph_LINE() {
+    public void outputEdgeGraph_LINE(int Year) {
         try {
             for (int hour = 0; hour < 24; hour++) {
-                BufferedWriter fout = new BufferedWriter(new FileWriter(String.format("../miscs/taxi-CA-h%d.od", hour)));
+                BufferedWriter fout = new BufferedWriter(new FileWriter(String.format("../miscs/%d/taxi-CA-h%d.od",
+                        Year, hour)));
                 for (int i = 1; i <= communities.size(); i++) {
                     for (int j = 1; j < communities.size(); j++) {
                         fout.write(String.format("%d %d %d\n", i, j, communities.get(i).getFlowTo(j, hour)));
@@ -183,20 +188,21 @@ public class CommunityAreas
 
     public static void serializeCommunityAreas() {
         CommunityAreas CAs = new CommunityAreas();
-        TaxiTripIterator tti = new TaxiTripIterator(2013);
+        TaxiTripIterator tti = new TaxiTripIterator(Year);
         CAs.mapTripsIntoCommunities(tti);
-        CAs.serializeCAs(2013);
+        CAs.serializeCAs(Year);
     }
 
 
     public static void main( String[] args )
     {
-//        serializeCommunityAreas();
+        CommunityAreas.Year = Integer.parseInt(args[0]);
+//        serializeCommunityAreas(Year);
         CommunityAreas CAs = new CommunityAreas();
-        CAs.deserialzeCAs(2013);
-        CAs.outputStaticFlowGraph();
-        CAs.outputEdgeGraph_LINE();
-        CAs.outputAdjacencyMatrix();
+        CAs.deserialzeCAs(Year);
+        CAs.outputStaticFlowGraph(Year);
+        CAs.outputEdgeGraph_LINE(Year);
+        CAs.outputAdjacencyMatrix(Year);
     }
 }
 

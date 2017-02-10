@@ -67,7 +67,7 @@ public class CrossTimeGraph extends LayeredGraph {
      */
     public static CrossTimeGraph constructGraph_CA(int[] timeIntervals) {
         CommunityAreas cas = new CommunityAreas();
-        cas.deserialzeCAs(2013);
+        cas.deserialzeCAs(DeepWalk.Year);
         CrossTimeGraph.numLayer = timeIntervals.length - 1;
 
         long t1 = System.currentTimeMillis();
@@ -129,8 +129,8 @@ public class CrossTimeGraph extends LayeredGraph {
         System.out.println("Starting sequence sampling...");
 
         try {
-            BufferedWriter fout = new BufferedWriter(new FileWriter(String.format("../miscs/deepwalkseq-%s/taxi-crosstime.seq",
-                    regionLevel)));
+            BufferedWriter fout = new BufferedWriter(new FileWriter(String.format("../miscs/%d/deepwalkseq-%s/taxi-crosstime.seq",
+                    DeepWalk.Year, regionLevel)));
             for (int i = 0; i < numSamples; i ++) {
                 List<String> seq = g.sampleVertexSequence();
                 String line = String.join(" ", seq);

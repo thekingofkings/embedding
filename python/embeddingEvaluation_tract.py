@@ -134,7 +134,7 @@ def retrieveEmbeddingFeatures():
     
     
     
-def retrieveCrossIntervalEmbeddings(fn="../miscs/taxi-crossInterval.vec", skipheader=1):
+def retrieveCrossIntervalEmbeddings(fn=, skipheader=1):
     t = np.genfromtxt(fn, delimiter=" ", skip_header=skipheader, dtype=None)
     tid = [row[0] for row in t]
     
@@ -279,7 +279,7 @@ def topKcover_case(k, estimator, pair_gnd, cmp_estimator):
     
     
     
-def evalute_by_pairwise_similarity(topk=20):
+def evalute_by_pairwise_similarity(Year, topk=20):
     with open("../miscs/POI_tract.pickle") as fin:
         ordKey = pickle.load(fin)
         tract_poi = pickle.load(fin)
@@ -292,11 +292,11 @@ def evalute_by_pairwise_similarity(topk=20):
     pair_gnd, gnd_est = generatePairWiseGT(ordKey, tract_poi)
         
     embedFeatures, embedRid = retrieveEmbeddingFeatures()
-    geoFeatures, geoRid = retrieveCrossIntervalEmbeddings("../miscs/taxi-deepwalk-tract-onlyspatial.vec", skipheader=0)
-    crosstimeFeatures, cteRid = retrieveCrossIntervalEmbeddings("../miscs/taxi-deepwalk-tract-nospatial.vec", skipheader=0)
-    twoGraphEmbeds, twoGRids = retrieveCrossIntervalEmbeddings("../miscs/taxi-deepwalk-tract-usespatial.vec", skipheader=0)
+    geoFeatures, geoRid = retrieveCrossIntervalEmbeddings("../miscs/{0}/taxi-deepwalk-tract-onlyspatial.vec".format(Year), skipheader=0)
+    crosstimeFeatures, cteRid = retrieveCrossIntervalEmbeddings("../miscs/{0}/taxi-deepwalk-tract-nospatial.vec".format(Year), skipheader=0)
+    twoGraphEmbeds, twoGRids = retrieveCrossIntervalEmbeddings("../miscs/{0}/taxi-deepwalk-tract-usespatial.vec".format(Year), skipheader=0)
     
-    features, rid = retrieveEmbeddingFeatures_helper("../miscs/taxi-all.vec")
+    features, rid = retrieveEmbeddingFeatures_helper("../miscs/{0}/taxi-all.vec".format(Year))
     pe_all_embed = pairwiseEstimator(features, rid)
     acc = ndcg_atK(topk, pe_all_embed, gnd_est)
     print "NDCG of static graph", acc
@@ -741,6 +741,7 @@ def visualizeEmbedding_2D():
 
 
 def pairwise_similarity_evaluation_plot():
+    x = [5, 10, 20, 30, 40]
     orders = [4, 5, 0, 3, 2, 1]
     lsty = ["x", "v", "^", "s", "o", "+"]
     res = pickle.load(open("ndcg.pickle"))
@@ -769,7 +770,7 @@ if __name__ == '__main__':
             res = []
             x = [5, 10, 20, 30, 40]
             for k in x:
-                res.append(evalute_by_pairwise_similarity(k))
+                res.append(evalute_by_pairwise_similarity(2013, k))
             res = np.array(res)
             
             pickle.dump(res, open("ndcg.pickle", 'w'))

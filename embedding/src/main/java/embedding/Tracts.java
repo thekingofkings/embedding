@@ -19,6 +19,7 @@ public class Tracts {
     public static final String shapeFilePath = "../data/Census-Tracts-2010/chicago-tract.shp";
     public static ShapefileDataStore shapefile;
     public static int numTimeSlot = 8;
+    public static int Year = 2013;
 
     public AbstractMap<Integer, Tract> tracts;
 
@@ -112,10 +113,12 @@ public class Tracts {
     }
 
     public void deserialzeTracts(int year) {
+        System.out.format("Deserialize tracts with flow in %d.\n", year);
         try {
             ObjectInputStream ois = new ObjectInputStream(new FileInputStream(String.format("../miscs/tracts-serialize-%d.seq", year)));
             numTimeSlot = ois.readInt();
             tracts = (HashMap<Integer, Tract>) ois.readObject();
+            ois.close();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -230,11 +233,11 @@ public class Tracts {
      * Output the taxi flow as edge file, namely, each row is an edge, (src, dst, weight). The edge graph is constructed
      * timeslot by timeslot independently, and there will be {@link Tracts#numTimeSlot} edge graphs.
      */
-    public void outputEdgeFile() {
+    public void outputEdgeFile(int year) {
         try {
             int timeStep = 24 / numTimeSlot;
             for (int h = 0; h < numTimeSlot; h++) {
-                BufferedWriter fout = new BufferedWriter(new FileWriter(String.format("../miscs/taxi-h%d.od", h)));
+                BufferedWriter fout = new BufferedWriter(new FileWriter(String.format("../miscs/%d/taxi-h%d.od", year, h)));
                 for (Tract t : tracts.values()) {
                     for (int dst : t.taxiFlows.get(h).keySet()) {
                         int w = t.getFlowTo(dst, h, h+timeStep-1);
@@ -246,7 +249,7 @@ public class Tracts {
             }
 
             // one static graph (without temporal dynamics)
-            BufferedWriter fout = new BufferedWriter(new FileWriter("../miscs/taxi-all.od"));
+            BufferedWriter fout = new BufferedWriter(new FileWriter(String.format("../miscs/%d/taxi-all.od", year)));
             for (Tract src: tracts.values()) {
                 for (Tract dst: tracts.values()) {
                     int w = src.getFlowTo(dst.id, 0, 23);
@@ -261,15 +264,15 @@ public class Tracts {
     }
 
     /**
-     * Output the hourly taxi flow graph as an adjacency matrix. The graph is exactly the same as {@link Tracts#outputEdgeFile()}.
+     * Output the hourly taxi flow graph as an adjacency matrix. The graph is exactly the same as {@link Tracts#outputEdgeFile(int year)}.
      */
-    public void outputAdjacencyMatrix() {
+    public void outputAdjacencyMatrix(int year) {
         try {
+            List<Integer> sortedId = new LinkedList<>(tracts.keySet());
+            sortedId.sort((a,b) -> a.compareTo(b));
             int timeStep = 24 / numTimeSlot;
             for (int h = 0; h < numTimeSlot; h++) {
-                BufferedWriter fout = new BufferedWriter(new FileWriter(String.format("../miscs/taxi-h%d.matrix", h)));
-                List<Integer> sortedId = new LinkedList<>(tracts.keySet());
-                sortedId.sort((a,b) -> a.compareTo(b));
+                BufferedWriter fout = new BufferedWriter(new FileWriter(String.format("../miscs/%d/taxi-h%d.matrix", year, h)));
                 for (int src : sortedId) {
                     List<String> row = new LinkedList<>();
                     for (int dst : sortedId) {
@@ -280,6 +283,18 @@ public class Tracts {
                 }
                 fout.close();
             }
+
+            // one static graph (without temporal dynamics)
+            BufferedWriter fout = new BufferedWriter(new FileWriter(String.format("../miscs/%d/taxi-all.matrix", year)));
+            for (int src: sortedId) {
+                List<String> row = new LinkedList<>();
+                for (int dst: sortedId) {
+                    row.add(Integer.toString(tracts.get(src).getFlowTo(dst, 0, 23)));
+                }
+                String line = String.join(",", row) + "\n";
+                fout.write(line);
+            }
+            fout.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -293,7 +308,7 @@ public class Tracts {
      *
      * The basic assumption is that people go to B from A during interval t_i, then they stay there in t_i+1.
      *
-     * @deprecated We do not use learn word2vec on top of this graph. Instead, we use {@link LayeredGraph}. More
+     * @deprecated We do not use  word2vec on top of this graph. Instead, we use {@link LayeredGraph}. More
      * specifically, we use {@link CrossTimeGraph} and {@link SpatialGraph}.
      */
     public void outputEdgeGraph_crossInterval() {
@@ -314,11 +329,11 @@ public class Tracts {
         }
     }
 
-    public static void generateEdgeFileForEmbedding() {
+    public static void generateEdgeFileForEmbedding(int year) {
         Tracts trts = new Tracts();
-        trts.deserialzeTracts(2013);
-        trts.outputEdgeFile();  // for graph embedding LINE
-        trts.outputAdjacencyMatrix();   // for matrix factorization
+        trts.deserialzeTracts(year);
+        trts.outputEdgeFile(year);  // for graph embedding LINE
+        trts.outputAdjacencyMatrix(year);   // for matrix factorization
 //        trts.outputEdgeGraph_crossInterval();
     }
 
@@ -415,12 +430,14 @@ public class Tracts {
             } else if (argv[0].equals("case-brute")) {
                 case_from_bruteForce();
             } else if (argv[0].equals("edge-file")) {
-                generateEdgeFileForEmbedding();
+                Tracts.Year = 2014;
+                generateEdgeFileForEmbedding(Year);
             } else if (argv[0].equals("serialize-tracts")) {
                 Tracts tracts = new Tracts();
-                TaxiTripIterator tti = new TaxiTripIterator(2013);
+                Tracts.Year = 2014;
+                TaxiTripIterator tti = new TaxiTripIterator(Year);
                 tracts.mapTripsIntoTracts(tti);
-                tracts.serializeTracts(2013);
+                tracts.serializeTracts(Year);
             }
         } else {
             System.out.println("Specify task!");

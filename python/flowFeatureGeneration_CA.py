@@ -25,8 +25,10 @@ import pickle
 import sys
 
 
+year = 2013
+
 def NMFfeatures_helper(h):    
-    f = np.loadtxt("../miscs/taxi-CA-h{0}.matrix".format(h), delimiter=" ")
+    f = np.loadtxt("../miscs/{0}/taxi-CA-h{1}.matrix".format(year, h), delimiter=" ")
     d1, d2 = f.shape
     assert d1 == d2 and d1 == 77
     
@@ -52,7 +54,7 @@ def getNMFfeatures():
 def getLINEembeddingFeatures():
     res = {}
     for h in range(24):
-        f, ids = retrieveEmbeddingFeatures_helper("../miscs/taxi-CA-h{0}.vec".format(h))
+        f, ids = retrieveEmbeddingFeatures_helper("../miscs/{0}/taxi-CA-h{1}.vec".format(year, h))
         assert len(ids) == 77
         sids = np.argsort(ids)
         features = f[sids, :]
@@ -63,7 +65,7 @@ def getLINEembeddingFeatures():
 def getDeepwalkEmbeddingFeatures(Spatial):
     res = {}
     emptyEmbedding = np.zeros((8,))
-    features, ids = retrieveCrossIntervalEmbeddings("../miscs/taxi-deepwalk-CA-{0}.vec".format(Spatial), skipheader=0)
+    features, ids = retrieveCrossIntervalEmbeddings("../miscs/{0}/taxi-deepwalk-CA-{1}.vec".format(year, Spatial), skipheader=0)
     for h in range(24):
         sids = np.argsort(ids[h])
         res[h] = features[h][sids, :]
@@ -78,11 +80,16 @@ def getDeepwalkEmbeddingFeatures(Spatial):
 
 
 if __name__ == "__main__":
+    year = int(sys.argv[1])
     mf = getNMFfeatures()
     line = getLINEembeddingFeatures()
-    dw = getDeepwalkEmbeddingFeatures(sys.argv[1])
-    with open("../miscs/CAflowFeatures.pickle", "w") as fout:
+    dwt = getDeepwalkEmbeddingFeatures("nospatial")
+    dws = getDeepwalkEmbeddingFeatures("onlyspatial")
+    hdge = getDeepwalkEmbeddingFeatures("usespatial")
+    with open("../miscs/{0}/CAflowFeatures.pickle".format(year), "w") as fout:
         pickle.dump(mf, fout)
         pickle.dump(line, fout)
-        pickle.dump(dw, fout)
+        pickle.dump(dwt, fout)
+        pickle.dump(dws, fout)
+        pickle.dump(hdge, fout)
         

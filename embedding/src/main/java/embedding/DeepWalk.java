@@ -46,22 +46,22 @@ public class DeepWalk {
 
         SentenceIterator itr;
         if (spatialGF.equals("usespatial")) {
-            File seqDir = new File(String.format("../miscs/deepwalkseq-%s", regionLevel));
+            File seqDir = new File(String.format("../miscs/%d/deepwalkseq-%s", Year, regionLevel));
             itr = new FileSentenceIterator(seqDir);
         } else if (spatialGF.equals("nospatial")) {
-            File seqFile = new File(String.format("../miscs/deepwalkseq-%s/taxi-crosstime.seq", regionLevel));
+            File seqFile = new File(String.format("../miscs/%d/deepwalkseq-%s/taxi-crosstime.seq", Year, regionLevel));
             itr = new LineSentenceIterator(seqFile);
         } else if (spatialGF.equals("onlyspatial")) {
-            File seqFile = new File(String.format("../miscs/deepwalkseq-%s/taxi-spatial.seq", regionLevel));
+            File seqFile = new File(String.format("../miscs/%d/deepwalkseq-%s/taxi-spatial.seq", Year, regionLevel));
             itr = new LineSentenceIterator(seqFile);
         }else {
             itr = null;
         }
 
-        String out = String.format("../miscs/taxi-deepwalk-%s-%s.vec", regionLevel, spatialGF);
+        String out = String.format("../miscs/%d/taxi-deepwalk-%s-%s.vec", Year, regionLevel, spatialGF);
         int layerSize = 20;
         if (regionLevel.equals("CA"))
-            layerSize = 6;
+            layerSize = 8;
         else if (regionLevel.equals("tract"))
             layerSize = 20;
 
@@ -83,11 +83,11 @@ public class DeepWalk {
     }
 
     public static void checkInputFile(String regionLevel, String spatialGF) {
-        File sgSeq = new File(String.format("../miscs/deepwalkseq-%s/taxi-spatial.seq", regionLevel));
+        File sgSeq = new File(String.format("../miscs/%d/deepwalkseq-%s/taxi-spatial.seq", Year, regionLevel));
         if ((spatialGF.equals("usespatial") || spatialGF.equals("onlyspatial")) && !sgSeq.exists()) {
             System.out.format("The spatial graph samples for %s do not exist, but we need it! Generating ...\n", regionLevel);
             if (regionLevel.equals("tract")) {
-                SpatialGraph.numSamples = 100_000;
+                SpatialGraph.numSamples = 600_000;
                 SpatialGraph.numLayer = 8;
             } else {
                 SpatialGraph.numSamples = 80_000;
@@ -96,11 +96,11 @@ public class DeepWalk {
             SpatialGraph.outputSampleSequence(regionLevel);
         }
 
-        File ctSeq = new File(String.format("../miscs/deepwalkseq-%s/taxi-crosstime.seq", regionLevel));
+        File ctSeq = new File(String.format("../miscs/%d/deepwalkseq-%s/taxi-crosstime.seq", Year, regionLevel));
         if ((spatialGF.equals("nospatial") || spatialGF.equals("usespatial")) && !ctSeq.exists()) {
             System.out.format("The transition graph samples for %s do not exists! Generating ...\n", regionLevel);
             if (regionLevel.equals("tract")) {
-                CrossTimeGraph.numSamples = 7_000_000;
+                CrossTimeGraph.numSamples = 15_000_000;
                 CrossTimeGraph.numLayer = 8;
             } else {
                 CrossTimeGraph.numSamples = 8_000_000;

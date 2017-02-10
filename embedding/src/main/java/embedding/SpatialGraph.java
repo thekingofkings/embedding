@@ -98,8 +98,8 @@ public class SpatialGraph extends LayeredGraph {
         long t2 = System.currentTimeMillis();
         System.out.println("Starting sequence sampling...");
         try {
-            BufferedWriter fout = new BufferedWriter(new FileWriter(String.format("../miscs/deepwalkseq-%s/taxi-spatial.seq",
-                    regionLevel)));
+            BufferedWriter fout = new BufferedWriter(new FileWriter(String.format("../miscs/%d/deepwalkseq-%s/taxi-spatial.seq",
+                    DeepWalk.Year, regionLevel)));
             for (int i = 0; i < numSamples; i++) {
                 List<String> seq = g.sampleVertexSequence();
                 for (int j = 0; j < seq.size(); j++) {
