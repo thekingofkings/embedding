@@ -19,7 +19,7 @@ if [ ! -f ~/workspace/embedding/miscs/$Year/taxi-CA-static.matrix ]; then
 	mvn exec:java -Dexec.mainClass="embedding.CommunityAreas" -Dexec.args=$Year
 fi
 
-if [ ! -f ~/workspace/embedding/miscs/taxi-CA-h23.vec ]; then
+if [ ! -f ~/workspace/embedding/miscs/$Year/taxi-CA-h23.vec ]; then
 	cd ~/workspace/LINE/linux
 	./train-CA.sh $Year
 else
@@ -42,4 +42,4 @@ cp CAflowFeatures.pickle ~/workspace/chicago-crime/python/multi-view-learning/
 echo "### 5 run regression to predict crime"
 
 cd ~/workspace/chicago-crime/python/multi-view-learning
-python multi_view_prediction.py $Spatial
+python multi_view_prediction.py $Year $Spatial

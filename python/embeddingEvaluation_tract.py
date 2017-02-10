@@ -134,7 +134,7 @@ def retrieveEmbeddingFeatures():
     
     
     
-def retrieveCrossIntervalEmbeddings(fn=, skipheader=1):
+def retrieveCrossIntervalEmbeddings(fn, skipheader=1):
     t = np.genfromtxt(fn, delimiter=" ", skip_header=skipheader, dtype=None)
     tid = [row[0] for row in t]
     
