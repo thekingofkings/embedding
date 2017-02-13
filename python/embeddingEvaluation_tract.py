@@ -14,8 +14,8 @@ import numpy as np
 from sklearn import tree
 from sklearn.model_selection import cross_val_score
 import matplotlib.pyplot as plt
-from scipy.spatial.distance import cosine
-from sklearn.preprocessing import scale
+from scipy.spatial.distance import cosine, euclidean
+# from sklearn.preprocessing import scale
 from sklearn.cluster import KMeans
 
 
@@ -80,7 +80,7 @@ def generatePairWiseGT(rids, tract_poi):
                     poi.append(tract_poi[k][p])
                 else:
                     poi.append(0)
-        pv = np.array(poi) / float(sum(poi)) if sum(poi) != 0 else np.array(poi)
+        pv = np.array(poi) # / float(sum(poi)) if sum(poi) != 0 else np.array(poi)
         gnd_vec[k] = pv
     
     gnd_pair = {}
@@ -92,11 +92,11 @@ def generatePairWiseGT(rids, tract_poi):
                 continue
             c = cosine(gnd_vec[k], gnd_vec[k2])
             if np.isnan(c):
-                c = -1
+                c = 2
             cosDist.append((k2, c))
         cosDist.sort(key=lambda x: x[1])
-        gnd_est[k] = cosDist
-        gnd_pair[k] = [cosDist[i][0] for i in range(30)]
+        gnd_pair[k] = [cosDist[i][0] for i in range(300)]
+        gnd_est[k] = dict(cosDist)
             
     return gnd_pair, gnd_est
         
@@ -115,7 +115,7 @@ def retrieveEmbeddingFeatures_helper(fileName):
     return features, rid
     
     
-def retrieveEmbeddingFeatures():
+def retrieveEmbeddingFeatures(Year):
     """
     Retrive embeddings for each region from the *.vec file.
     
@@ -125,7 +125,7 @@ def retrieveEmbeddingFeatures():
     embedF = []
     embedRid = []
     for h in range(numLayer):
-        t = np.genfromtxt("../miscs/taxi-h{0}.vec".format(h), delimiter=" ", skip_header=1)
+        t = np.genfromtxt("../miscs/{0}/taxi-h{1}.vec".format(Year, h), delimiter=" ", skip_header=1)
         embedRid.append(t[:,0].astype(int))
         t = t[:, 1:]
         assert t.shape[1]==20
@@ -177,6 +177,7 @@ def pairwiseEstimator(features, rids):
         The key of dictionary is the Id of each region.
     """
     estimates = {}
+    neighbors = {}
     for i, k in enumerate(rids):
         pd = []
         for i2, k2 in enumerate(rids):
@@ -184,12 +185,13 @@ def pairwiseEstimator(features, rids):
                 continue
             c = cosine(features[i], features[i2])
             if np.isnan(c):
-                pd.append((k2, -1))
+                pd.append((k2, 2))
             else:
                 pd.append((k2, c))
         pd.sort(key=lambda x: x[1])
-        estimates[k] = pd
-    return estimates
+        estimates[k] = pd 
+        neighbors[k] = map(lambda x: x[0], pd)
+    return estimates, neighbors
     
     
     
@@ -242,18 +244,18 @@ def precision_atK(k, estimator, pair_gnd):
     return PatK / total
     
 
-def dcg_atK(k, neighbors):
-    relv = [1-neighbors[i][1] for i in range(k)]
+def dcg_atK(k, gnd_est, neighbors):
+    relv = [ 1- gnd_est[neighbors[i]] for i in range(k)]
     return np.sum([relv[i-1] / np.log2(i+1) for i in range(1, len(relv)+1)])
 
 
-def ndcg_atK(k, estimator, gnd_est):
+def ndcg_atK(k, neighbors, gnd_est, dcg_max):
     ndcgK = 0.0
-    total = len(gnd_est)
-    for rid in estimator:
-        dcg_max = dcg_atK(k, gnd_est[rid])
-        dcg = dcg_atK(k, estimator[rid])
-        ndcgK += dcg / dcg_max
+    total = len(neighbors)
+    for rid in neighbors:
+        dcg = dcg_atK(k, gnd_est[rid], neighbors[rid])
+        print dcg_max, dcg
+        ndcgK += dcg / dcg_max[rid]
     return ndcgK / total
 
 
@@ -291,14 +293,20 @@ def evalute_by_pairwise_similarity(Year, topk=20):
     
     pair_gnd, gnd_est = generatePairWiseGT(ordKey, tract_poi)
         
-    embedFeatures, embedRid = retrieveEmbeddingFeatures()
+    embedFeatures, embedRid = retrieveEmbeddingFeatures(Year)
     geoFeatures, geoRid = retrieveCrossIntervalEmbeddings("../miscs/{0}/taxi-deepwalk-tract-onlyspatial.vec".format(Year), skipheader=0)
     crosstimeFeatures, cteRid = retrieveCrossIntervalEmbeddings("../miscs/{0}/taxi-deepwalk-tract-nospatial.vec".format(Year), skipheader=0)
     twoGraphEmbeds, twoGRids = retrieveCrossIntervalEmbeddings("../miscs/{0}/taxi-deepwalk-tract-usespatial.vec".format(Year), skipheader=0)
     
+    
+    dcg_max = {}
+    for rid in ordKey:
+        dcg_max[rid] = dcg_atK(topk, gnd_est, pair_gnd)
+    
+    
     features, rid = retrieveEmbeddingFeatures_helper("../miscs/{0}/taxi-all.vec".format(Year))
-    pe_all_embed = pairwiseEstimator(features, rid)
-    acc = ndcg_atK(topk, pe_all_embed, gnd_est)
+    pe_all_embed, neighbors_static = pairwiseEstimator(features, rid)
+    acc = ndcg_atK(topk, neighbors_static, gnd_est, dcg_max)
     print "NDCG of static graph", acc
     
     ACC1 = []
@@ -309,11 +317,11 @@ def evalute_by_pairwise_similarity(Year, topk=20):
     plt.figure()
     for h in range(numLayer):
         
-        pe_embed = pairwiseEstimator(embedFeatures[h], embedRid[h])
-        pe_mf = pairwiseEstimator(nmfeatures[h], nmRid[h])
-        pe_geo = pairwiseEstimator(geoFeatures[h], geoRid[h])
-        pe_cte = pairwiseEstimator(crosstimeFeatures[h], cteRid[h])
-        pe_twoG = pairwiseEstimator(twoGraphEmbeds[h], twoGRids[h])
+        pe_embed, neighbors_line = pairwiseEstimator(embedFeatures[h], embedRid[h])
+        pe_mf, neighbors_mf = pairwiseEstimator(nmfeatures[h], nmRid[h])
+        pe_geo, neighbors_geo = pairwiseEstimator(geoFeatures[h], geoRid[h])
+        pe_cte, neighbors_transition = pairwiseEstimator(crosstimeFeatures[h], cteRid[h])
+        pe_twoG, neighbors_twoG = pairwiseEstimator(twoGraphEmbeds[h], twoGRids[h])
         
         n = float(len(ordKey))
         cov1 = len(embedRid[h]) / n
@@ -327,11 +335,11 @@ def evalute_by_pairwise_similarity(Year, topk=20):
 #        acc3 = precision_atK(topk, pe_cte, pair_gnd)
 #        acc4 = precision_atK(topk, pe_twoG, pair_gnd)
 
-        acc1 = ndcg_atK(topk, pe_embed, gnd_est)
-        acc2 = ndcg_atK(topk, pe_mf, gnd_est)
-        acc3 = ndcg_atK(topk, pe_cte, gnd_est)
-        acc4 = ndcg_atK(topk, pe_twoG, gnd_est)
-        acc5 = ndcg_atK(topk, pe_geo, gnd_est)
+        acc1 = ndcg_atK(topk, neighbors_line, gnd_est, dcg_max)
+        acc2 = ndcg_atK(topk, neighbors_mf, gnd_est, dcg_max)
+        acc3 = ndcg_atK(topk, neighbors_transition, gnd_est, dcg_max)
+        acc4 = ndcg_atK(topk, neighbors_twoG, gnd_est, dcg_max)
+        acc5 = ndcg_atK(topk, neighbors_geo, gnd_est, dcg_max)
 
         
         ACC1.append(acc1)
