@@ -251,10 +251,9 @@ def dcg_atK(k, gnd_est, neighbors):
 
 def ndcg_atK(k, neighbors, gnd_est, dcg_max):
     ndcgK = 0.0
-    total = len(neighbors)
+    total = len(gnd_est)
     for rid in neighbors:
         dcg = dcg_atK(k, gnd_est[rid], neighbors[rid])
-        print dcg_max, dcg
         ndcgK += dcg / dcg_max[rid]
     return ndcgK / total
 
@@ -301,7 +300,7 @@ def evalute_by_pairwise_similarity(Year, topk=20):
     
     dcg_max = {}
     for rid in ordKey:
-        dcg_max[rid] = dcg_atK(topk, gnd_est, pair_gnd)
+        dcg_max[rid] = dcg_atK(topk, gnd_est[rid], pair_gnd[rid])
     
     
     features, rid = retrieveEmbeddingFeatures_helper("../miscs/{0}/taxi-all.vec".format(Year))
@@ -762,7 +761,7 @@ def pairwise_similarity_evaluation_plot():
     plt.xlabel("$k$", fontsize=24)
     plt.ylabel("$nDCG$", fontsize=24)
     plt.tick_params(labelsize=18)
-    plt.axis([2, 43, 0.18, 0.85])
+    plt.axis([2, 43, 0.7, 0.9])
     plt.grid(b=True, axis="both", lw=1)
     plt.savefig("pairwise-similarity.pdf")
     
