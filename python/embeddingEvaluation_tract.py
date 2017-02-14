@@ -14,7 +14,7 @@ import numpy as np
 from sklearn import tree
 from sklearn.model_selection import cross_val_score
 import matplotlib.pyplot as plt
-from scipy.spatial.distance import cosine, euclidean
+from scipy.spatial.distance import cosine
 # from sklearn.preprocessing import scale
 from sklearn.cluster import KMeans
 
@@ -245,14 +245,14 @@ def precision_atK(k, estimator, pair_gnd):
     
 
 def dcg_atK(k, gnd_est, neighbors):
-    relv = [ 1- gnd_est[neighbors[i]] for i in range(k)]
+    relv = [ 1.0 - gnd_est[neighbors[i]] for i in range(k)]
     return np.sum([relv[i-1] / np.log2(i+1) for i in range(1, len(relv)+1)])
 
 
-def ndcg_atK(k, neighbors, gnd_est, dcg_max):
+def ndcg_atK(k, testing, neighbors, gnd_est, dcg_max):
     ndcgK = 0.0
-    total = len(gnd_est)
-    for rid in neighbors:
+    total = len(testing)
+    for rid in testing:
         dcg = dcg_atK(k, gnd_est[rid], neighbors[rid])
         ndcgK += dcg / dcg_max[rid]
     return ndcgK / total
@@ -285,7 +285,7 @@ def evalute_by_pairwise_similarity(Year, topk=20):
         ordKey = pickle.load(fin)
         tract_poi = pickle.load(fin)
     
-    with open("../miscs/nmf-tract.pickle") as fin2:
+    with open("../miscs/{0}/nmf-tract.pickle".format(Year)) as fin2:
         nmfeatures = pickle.load(fin2)
         nmRid = pickle.load(fin2)
         
@@ -303,10 +303,7 @@ def evalute_by_pairwise_similarity(Year, topk=20):
         dcg_max[rid] = dcg_atK(topk, gnd_est[rid], pair_gnd[rid])
     
     
-    features, rid = retrieveEmbeddingFeatures_helper("../miscs/{0}/taxi-all.vec".format(Year))
-    pe_all_embed, neighbors_static = pairwiseEstimator(features, rid)
-    acc = ndcg_atK(topk, neighbors_static, gnd_est, dcg_max)
-    print "NDCG of static graph", acc
+    
     
     ACC1 = []
     ACC2 = []
@@ -322,6 +319,8 @@ def evalute_by_pairwise_similarity(Year, topk=20):
         pe_cte, neighbors_transition = pairwiseEstimator(crosstimeFeatures[h], cteRid[h])
         pe_twoG, neighbors_twoG = pairwiseEstimator(twoGraphEmbeds[h], twoGRids[h])
         
+        test_set = np.intersect1d(neighbors_line.keys(), neighbors_transition.keys())
+        
         n = float(len(ordKey))
         cov1 = len(embedRid[h]) / n
         cov2 = len(nmRid[h]) / n
@@ -334,11 +333,11 @@ def evalute_by_pairwise_similarity(Year, topk=20):
 #        acc3 = precision_atK(topk, pe_cte, pair_gnd)
 #        acc4 = precision_atK(topk, pe_twoG, pair_gnd)
 
-        acc1 = ndcg_atK(topk, neighbors_line, gnd_est, dcg_max)
-        acc2 = ndcg_atK(topk, neighbors_mf, gnd_est, dcg_max)
-        acc3 = ndcg_atK(topk, neighbors_transition, gnd_est, dcg_max)
-        acc4 = ndcg_atK(topk, neighbors_twoG, gnd_est, dcg_max)
-        acc5 = ndcg_atK(topk, neighbors_geo, gnd_est, dcg_max)
+        acc1 = ndcg_atK(topk, test_set, neighbors_line, gnd_est, dcg_max)
+        acc2 = ndcg_atK(topk, test_set, neighbors_mf, gnd_est, dcg_max)
+        acc3 = ndcg_atK(topk, test_set, neighbors_transition, gnd_est, dcg_max)
+        acc4 = ndcg_atK(topk, test_set, neighbors_twoG, gnd_est, dcg_max)
+        acc5 = ndcg_atK(topk, test_set, neighbors_geo, gnd_est, dcg_max)
 
         
         ACC1.append(acc1)
@@ -347,6 +346,13 @@ def evalute_by_pairwise_similarity(Year, topk=20):
         ACC4.append(acc4)
         ACC5.append(acc5)
         print h, cov1, acc1, cov2, acc2, cov3, acc3, cov4, acc4, cov5, acc5
+    
+    features, rid = retrieveEmbeddingFeatures_helper("../miscs/{0}/taxi-all.vec".format(Year))
+    pe_all_embed, neighbors_static = pairwiseEstimator(features, rid)
+    acc = ndcg_atK(topk, test_set, neighbors_static, gnd_est, dcg_max)
+    print "NDCG of static graph", acc
+    
+    
     print np.mean(ACC1), np.mean(ACC2), np.mean(ACC3), np.mean(ACC4)
     plt.plot(ACC1)
     plt.plot(ACC2)
@@ -428,7 +434,7 @@ def generateCrimeClusteringlabel(nclusters):
     crimes = []
     ids = []
     with open("../data/chicago-crime-tract-level-2013.csv") as fin:
-        h = fin.readline()
+        fin.readline()
         for l in fin:
             ls = l.strip().split(",")
             ids.append(int(ls[0][5:]))
@@ -748,39 +754,41 @@ def visualizeEmbedding_2D():
 
 
 def pairwise_similarity_evaluation_plot():
-    x = [5, 10, 20, 30, 40]
-    orders = [4, 5, 0, 3, 2, 1]
+    x = [5, 10, 20, 30, 40, 50, 60, 70]
+    orders = [3, 5, 4, 0, 1, 2]
     lsty = ["x", "v", "^", "s", "o", "+"]
-    res = pickle.load(open("ndcg.pickle"))
+    res = pickle.load(open("../miscs/2013/ndcg.pickle"))
     plt.rc("axes", linewidth=2)
-    plt.figure(figsize=(8,6))
+    plt.figure(figsize=(12,6))
     for i in range(res.shape[1]):
         plt.plot(x, res[:,orders[i]], lsty[orders[i]], linewidth=4, ls="-", ms=10, mew=3, mec="k")
-    plt.legend(["$HDGE$", "$DGE_{spatial}$", "$LINE_{static}$", "$DGE_{transition}$", "$MF$", "$LINE_{slotted}$"], loc="best",
-               fontsize=20, ncol=2)
+    lgd = plt.legend(["$HDGE$", "$DGE_{spatial}$", "$DGE_{transition}$", "$LINE_{static}$", "$LINE_{slotted}$", "$MF$"], loc="best",
+               fontsize=20, ncol=1, bbox_to_anchor=(1, 0.8))
     plt.xlabel("$k$", fontsize=24)
     plt.ylabel("$nDCG$", fontsize=24)
     plt.tick_params(labelsize=18)
-    plt.axis([2, 43, 0.7, 0.9])
+    plt.axis([0, 75, 0.83, 0.865])
     plt.grid(b=True, axis="both", lw=1)
-    plt.savefig("pairwise-similarity.pdf")
+    plt.subplots_adjust(right=0.7)
+    plt.savefig("pairwise-similarity.pdf", bbox_extra_artists=(lgd,))
     
     
     
     
 if __name__ == '__main__':
+    year = 2013
     import sys
     if len(sys.argv) > 1:
         if sys.argv[1] == "binary":
             evalute_by_binary_classification()
         elif sys.argv[1] == "pairwise-eval":
             res = []
-            x = [5, 10, 20, 30, 40]
+            x = [5, 10, 20, 30, 40, 50, 60, 70]
             for k in x:
-                res.append(evalute_by_pairwise_similarity(2013, k))
+                res.append(evalute_by_pairwise_similarity(year, k))
             res = np.array(res)
             
-            pickle.dump(res, open("ndcg.pickle", 'w'))
+            pickle.dump(res, open("../miscs/{0}/ndcg.pickle".format(year), 'w'))
             plt.figure()
             for i in range(res.shape[1]):
                 plt.plot(x, res[:,i])

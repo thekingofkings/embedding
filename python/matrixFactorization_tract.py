@@ -13,6 +13,7 @@ import numpy as np
 import nimfa
 
 numTimeSlot = 8
+year = 2013
 
 def getSortedId():
     with open("../miscs/POI_tract.pickle") as fin:
@@ -23,7 +24,7 @@ sortedId = getSortedId()
     
     
 def NMFfeatures(h):
-    t = np.genfromtxt("../miscs/taxi-h{0}.vec".format(h), delimiter=" ", skip_header=1)
+    t = np.genfromtxt("../miscs/{0}/taxi-h{1}.vec".format(year, h), delimiter=" ", skip_header=1)
     tid = t[:,0]
     l = len(tid)
     tid = tid.astype(int)
@@ -31,7 +32,7 @@ def NMFfeatures(h):
     idx = np.searchsorted(sortedId, tid)
     print "@hour {0}, #regions {1}".format(h, len(idx))
     
-    f = np.loadtxt("../miscs/taxi-h{0}.matrix".format(h), delimiter=",")
+    f = np.loadtxt("../miscs/{0}/taxi-h{1}.matrix".format(year, h), delimiter=",")
     fp = f[idx,:]
     fp = fp[:, idx]
     assert fp.shape==(l, l)
@@ -45,13 +46,14 @@ def NMFfeatures(h):
     
 
 if __name__ == '__main__':
+    year = 2013
     nmfeatures = []
     regionIDs = []
     for h in range(numTimeSlot):
         f, tid = NMFfeatures(h)
         nmfeatures.append(f)
         regionIDs.append(tid)
-    with open("../miscs/nmf-tract.pickle", "w") as fout:
+    with open("../miscs/{0}/nmf-tract.pickle".format(year), "w") as fout:
         pickle.dump(nmfeatures, fout)
         pickle.dump(regionIDs, fout)
 
