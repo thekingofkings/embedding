@@ -36,10 +36,15 @@ python flowFeatureGeneration_CA.py $Year
 echo "### 4 copy file into chicago-crime project"
 cd ~/workspace/embedding/miscs/$Year
 cp taxi-CA-static.matrix ~/workspace/chicago-crime/python/
+cp taxi-CA-h*.matrix ~/workspace/chicago-crime/python/
 cp CAflowFeatures.pickle ~/workspace/chicago-crime/python/multi-view-learning/
 
 
 echo "### 5 run regression to predict crime"
 
+cd ~/workspace/chicago-crime/python
+python feature_evaluation.py $Year
+
 cd ~/workspace/chicago-crime/python/multi-view-learning
 python multi_view_prediction.py $Year $Spatial
+
