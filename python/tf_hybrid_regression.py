@@ -44,6 +44,13 @@ if __name__ == '__main__':
     
     df = pd.concat((df, gd6, tf6), axis=1)
     
+    for i in range(1, 7):
+        tk = "taxi_{0}".format(i)
+        df[tk] = df[tk].apply(lambda x: df.ix[x, 'crime_rate'])
+        gk = "geo_{0}".format(i)
+        df[gk] = df[gk].apply(lambda x: df.ix[x, 'crime_rate'])
+        
+    
     population = tf.contrib.layers.real_valued_column("total_population")
     pop_density = tf.contrib.layers.real_valued_column("population_density")
     poverty = tf.contrib.layers.real_valued_column("poverty_index")
