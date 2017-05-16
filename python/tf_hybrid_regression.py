@@ -43,12 +43,6 @@ if __name__ == '__main__':
     df = df.rename(columns=lambda x: x.replace(" ", "_"))
     
     df = pd.concat((df, gd6, tf6), axis=1)
-    
-    for i in range(1, 7):
-        tk = "taxi_{0}".format(i)
-        df[tk] = df[tk].apply(lambda x: df.ix[x, 'crime_rate'])
-        gk = "geo_{0}".format(i)
-        df[gk] = df[gk].apply(lambda x: df.ix[x, 'crime_rate'])
         
     
     population = tf.contrib.layers.real_valued_column("total_population")
@@ -74,8 +68,11 @@ if __name__ == '__main__':
     taxi = []
     geo = []
     for i in range(1,7):
-        taxi.append(tf.contrib.layers.real_valued_column("taxi_{0}".format(i)))
-        geo.append(tf.contrib.layers.real_valued_column("geo_{0}".format(i)))
+        taxi.append(tf.contrib.layers.sparse_column_with_integerized_feature("taxi_{0}".format(i), bucket_size=77))
+        geo.append(tf.contrib.layers.sparse_column_with_integerized_feature("geo_{0}".format(i), bucket_size=77))
+    
+    taxi_emb = tf.contrib.layers.shared_embedding_columns(taxi, 3)
+    geo_emb = tf.contrib.layers.shared_embedding_columns(geo, 3)
     
     
     def train_input_fn():
@@ -93,14 +90,21 @@ if __name__ == '__main__':
         df_train = df.iloc[train_idx,:]
         df_test = df.iloc[test_idx, :]
         
-        m = tf.contrib.learn.LinearRegressor(feature_columns=[
-            population, pop_density, poverty, disadvantage, resid_stability, ethnic_diversity, 
-            pct_blk, pct_hisp, poi_food, poi_resd, poi_trvl, poi_entertain, poi_outdoor, poi_edu,
-            poi_night, poi_prof, poi_shops, poi_evnt] + taxi + geo,
-            optimizer=tf.train.FtrlOptimizer(
-            learning_rate=0.1,
-            l1_regularization_strength=0,
-            l2_regularization_strength=0.001)
+        m = tf.contrib.learn.DNNLinearCombinedRegressor(
+                linear_feature_columns=[population, pop_density, poverty, disadvantage, 
+                                        resid_stability, ethnic_diversity, 
+                                        pct_blk, pct_hisp, poi_food, poi_resd, poi_trvl, poi_entertain, poi_outdoor, poi_edu,
+                                        poi_night, poi_prof, poi_shops, poi_evnt],
+                linear_optimizer=tf.train.FtrlOptimizer(
+                        learning_rate=0.1,
+                        l1_regularization_strength=0,
+                        l2_regularization_strength=0.001),
+                dnn_feature_columns=list(taxi_emb + geo_emb),
+                dnn_hidden_units=[36, 3],
+                dnn_optimizer=tf.train.ProximalAdagradOptimizer(
+                        learning_rate=0.1,
+                        l1_regularization_strength=0.001,
+                        l2_regularization_strength=0.001)
         )
         m.fit(input_fn=train_input_fn, steps=10)
         est_bar = m.predict(input_fn=eval_input_fn, outputs=["scores"])
