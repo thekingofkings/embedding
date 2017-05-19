@@ -225,6 +225,10 @@ public class LayeredGraph {
         }
     }
 
+    /**
+     * Use alias table method to sample vertex sequence. O(1) method
+     * @return
+     */
     public List<String> sampleVertexSequence() {
         LinkedList<String> seq = new LinkedList<>();
         double x = rnd.nextDouble();
@@ -240,6 +244,33 @@ public class LayeredGraph {
         while (seq.size() < numLayer) {
             Vertex v = allVertices.get(seq.getLast());
             Vertex nn = v.sampleNextVertex();
+            if (nn == null)
+                break;
+            seq.add(nn.name);
+        }
+        return seq;
+    }
+
+    /**
+     * Use O(v) method to sample vertex sequence.
+     * @deprecated  this is slow. Use this only for comparison purpose with the better method
+     * {@link LayeredGraph#sampleVertexSequence()}.
+     * @return
+     */
+    public List<String> sampleVertexSequence_OV() {
+        double s = rnd.nextDouble() * sourceWeightSum;
+        LinkedList<String> seq = new LinkedList<>();
+        double cnt = 0;
+        for (Vertex v : sourceVertices) {
+            cnt += v.outDegree;
+            if (cnt >= s) {
+                seq.add(v.name);
+                break;
+            }
+        }
+        while (seq.size() < numLayer) {
+            Vertex v = allVertices.get(seq.getLast());
+            Vertex nn = v.sampleNextVertex_OV();
             if (nn == null)
                 break;
             seq.add(nn.name);

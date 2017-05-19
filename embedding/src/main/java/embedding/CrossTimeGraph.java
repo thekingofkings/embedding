@@ -135,7 +135,7 @@ public class CrossTimeGraph extends LayeredGraph {
                 List<String> seq = g.sampleVertexSequence();
                 String line = String.join(" ", seq);
                 fout.write(line + "\n");
-                if (i % (numSamples/10) == 0)
+                if (i % (numSamples/5) == 0)
                     System.out.format("%d%% finished\n", i / (numSamples/100));
             }
             fout.close();
@@ -144,15 +144,18 @@ public class CrossTimeGraph extends LayeredGraph {
         }
 
         long t3 = System.currentTimeMillis();
-        System.out.format("Sampling %d sequences finished in %d seconds.\n", numSamples, (t3-t2)/1000);
+        System.out.format("Sampling %d sequences finished in %f seconds.\n", numSamples, (t3-t2)/1000.0);
     }
 
 
 
     public static void main(String[] argv) {
-        numSamples = 2_000_000; // number of nodes * 1000
-        numLayer = 24;
-        outputSampleSequence("CA");
+        int numSamplesSet[] = new int[]{500_000, 1_000_000, 2_000_000, 5_000_000, 10_000_000};
+        for (int ns : numSamplesSet) {
+            numSamples = ns; // number of nodes * 1000
+            numLayer = 24;
+            outputSampleSequence("CA");
+        }
     }
 
 }
