@@ -121,8 +121,9 @@ def main(file_name):
     # 3 parameters you may want to change
     # n_page determines how many page you want to search in this zipcode and price range
     list_zip = range(60601, 60627) + range(60628, 60648) + [60649, 60651, 60652, 60653, 60655, 60656, 60657,
-                                                            60659, 60660, 60661, 60666, 60667]
-    assert len(list_zip) == 58
+                                                            60659, 60660, 60661, 60666, 60667, 60827]
+    assert len(list_zip) == 59
+
     list_price = [0, 100000, 200000, 300000, 400000, 500000, 600000, 700000, 800000, 900000, 1000000, 5000000]
     n_page = 20
     
@@ -200,7 +201,7 @@ def main(file_name):
 
 
             
-main('house_source')
+main('house_source_extra')
 
 
     
