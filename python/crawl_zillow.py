@@ -7,6 +7,13 @@ Created on Sun Aug 28 15:18:12 2016
 
 import requests
 import numpy as np
+import time
+
+session = requests.Session()
+session.headers.update({'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36',
+                        'Host': 'www.zillow.com',
+                        'Accept-Language': 'en-US,en;q=0.9',
+                        'Upgrade-Insecure-Requests': '1'})
 
 
 def split_each_item(content):
@@ -26,33 +33,32 @@ def split_each_item(content):
 def convert_to_dict(item_s):
         
     zpid = crawl_one_prop('zpid_', item_s) 
-    # street = crawl_one_prop('streetAddress">', item_s)
-    # city = crawl_one_prop('addressLocality">', item_s)
-    # state = crawl_one_prop('addressRegion">', item_s)
-    # zipcode = crawl_one_prop('postalCode" class="hide">', item_s)
-    # price = crawl_one_prop('class="zsg-photo-card-price">$', item_s)
-    # sold = crawl_one_prop('</span>SOLD: $', item_s)
-    # sold_time = crawl_one_prop('Sold ', item_s)
+    street = crawl_one_prop('streetAddress">', item_s)         
+    city = crawl_one_prop('addressLocality">', item_s)
+    state = crawl_one_prop('addressRegion">', item_s)
+    zipcode = crawl_one_prop('postalCode" class="hide">', item_s)
+    price = crawl_one_prop('class="zsg-photo-card-price">$', item_s)
+    sold = crawl_one_prop('</span>SOLD: $', item_s)
+    sold_time = crawl_one_prop('Sold ', item_s)
     lat = crawl_one_prop('<meta itemprop="latitude" content="', item_s)
     lon = crawl_one_prop('<meta itemprop="longitude" content="', item_s)
-    
+        
     price_sqft = crawl_one_prop('Price/sqft: $', item_s)
-    # bed_b = crawl_one_prop('"bed":', item_s)
-    # bath_b = crawl_one_prop('"bath":', item_s)
-    # sqft_b = crawl_one_prop('"sqft":', item_s)
-    # 
-    # bed_a = crawl_one_prop_backward(' bds', item_s)
-    # bath_a = crawl_one_prop_backward(' ba', item_s)
-    # sqft_a = crawl_one_prop_backward(' sqft', item_s)
-
-
-    # bed = compare_and_choose(bed_a, bed_b)
-    # bath = compare_and_choose(bath_a, bath_b)
-    # sqft = compare_and_choose(sqft_a, sqft_b)
+    bed_b = crawl_one_prop('"bed":', item_s)
+    bath_b = crawl_one_prop('"bath":', item_s)
+    sqft_b = crawl_one_prop('"sqft":', item_s)
+         
+    bed_a = crawl_one_prop_backward(' bds', item_s)
+    bath_a = crawl_one_prop_backward(' ba', item_s)
+    sqft_a = crawl_one_prop_backward(' sqft', item_s)
+    
+    
+    bed = compare_and_choose(bed_a, bed_b)
+    bath = compare_and_choose(bath_a, bath_b)
+    sqft = compare_and_choose(sqft_a, sqft_b)
      
-            
-    return [zpid, lat, lon, price_sqft]
-    # return [zpid, street, city, state, zipcode, price, sold, sold_time, price_sqft, lat, lon, bed, bath, sqft]
+#    return [zpid, sold_time, lat, lon, price_sqft]
+    return [zpid, street, city, state, zipcode, price, sold, sold_time, price_sqft, lat, lon, bed, bath, sqft]
     
 def compare_and_choose(a, b):
     if a == '-1' and b == '-1':
@@ -108,9 +114,11 @@ def crawl_one_prop(string_head, item_s):
     
         
 def crawl(z, price_range, page):
+    url = 'http://www.zillow.com/homes/'+str(z)+'_rb/'+str(price_range[0])+'-'+str(price_range[1])+'_price/11_zm/1_rs/'+str(page)+'_p/'
+    session.headers.update({'Referer': url})
+    res = session.get(url)
     
-    r = requests.get('http://www.zillow.com/homes/'+str(z)+'_rb/'+str(price_range[0])+'-'+str(price_range[1])+'_price/11_zm/1_rs/'+str(page)+'_p/')
-    content = r.content
+    content = res.content
     list_item = split_each_item(str(content))
         
     return list_item
@@ -123,12 +131,13 @@ def main(file_name):
     list_zip = range(60601, 60627) + range(60628, 60648) + [60649, 60651, 60652, 60653, 60655, 60656, 60657,
                                                             60659, 60660, 60661, 60666, 60667, 60827]
     assert len(list_zip) == 59
+#    list_zip = [60827]
 
     list_price = [0, 100000, 200000, 300000, 400000, 500000, 600000, 700000, 800000, 900000, 1000000, 5000000]
     n_page = 20
     
-    # array_data_head = ['zpid', 'street', 'city', 'state', 'zipcode',  'price', 'sold', 'soldTime', 'priceSqft', 'latitude', 'longitude', 'numBedrooms', 'numBathrooms', 'sqft']
-    array_data_head = ['zpid', 'lat', 'lon', 'priceSqft']
+    array_data_head = ['zpid', 'street', 'city', 'state', 'zipcode',  'price', 'sold', 'soldTime', 'priceSqft', 'latitude', 'longitude', 'numBedrooms', 'numBathrooms', 'sqft']
+#    array_data_head = ['zpid', 'soldTime', 'lat', 'lon', 'priceSqft']
     array_data = []
     for z in list_zip:
         for p in range(len(list_price)):
@@ -144,6 +153,7 @@ def main(file_name):
                 print ('page: '+str(page))
                 
                 list_item = crawl(z, price_range, page)
+                time.sleep(5)
 
                 if len(list_item) == 0:
                     break
@@ -165,7 +175,7 @@ def main(file_name):
     
     keep_list = []
     del_list = []
-    list_must_have_attr = ['zpid','lat','lon','priceSqft']
+    list_must_have_attr = ['zpid', 'lat','lon','priceSqft']
     for i in range(len(array_data)):
         for attr in list_must_have_attr:
             index_attr =  array_data_head.index(attr)
