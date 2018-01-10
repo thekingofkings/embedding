@@ -9,6 +9,8 @@ Created on Fri May 19 17:16:25 2017
 """
 
 import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.rc('pdf', fonttype=42)
 
 
 n_seqs = [0.5, 1, 2, 5, 10]

@@ -14,6 +14,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from embeddingEvaluation_tract import retrieveCrossIntervalEmbeddings, getLEHDfeatures_helper, mergeBlockCensus
 from sklearn.cluster import KMeans
+import matplotlib
+matplotlib.rc('pdf', fonttype=42)
 
 
 def tract_to_CA():
@@ -166,7 +168,7 @@ def visualizeEmbedding_2D_withCluster(ncluster=3):
         
     
 def visualizeEmbedding_2D():
-    twoGraphEmbeds, twoGRids = retrieveCrossIntervalEmbeddings("../miscs/taxi-deepwalk-CA-usespatial-2D.vec", skipheader=0)
+    twoGraphEmbeds, twoGRids = retrieveCrossIntervalEmbeddings("../miscs/2013/taxi-deepwalk-CA-usespatial-2D.vec", skipheader=0)
     groups = [[13,14,15,16], [8,32,33], [44,45,47,48], [76]]
 #    groups = [[5,6,7,21,22], [8,32,33], [26,27,29,30]]
     clrs = ["b", "r", "g", "c", "w", "k"]

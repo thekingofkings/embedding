@@ -17,6 +17,8 @@ import matplotlib.pyplot as plt
 from scipy.spatial.distance import cosine
 # from sklearn.preprocessing import scale
 from sklearn.cluster import KMeans
+import matplotlib
+matplotlib.rc('pdf', fonttype=42)
 
 
 """
@@ -764,7 +766,7 @@ def pairwise_similarity_evaluation_plot():
         if i == 3:
             continue
         plt.plot(x, res[:,orders[i]], lsty[orders[i]], linewidth=4, ls="-", ms=10, mew=3, mec="k")
-    lgd = plt.legend(["$HDGE$", "$DGE_{spatial}$", "$DGE_{transition}$", "$LINE$", "$MF$"], loc="best",
+    lgd = plt.legend(["$HDGE$", "$DGE_{spatial}$", "$DGE_{flow}$", "$LINE$", "$MF$"], loc="best",
                fontsize=20, ncol=1, bbox_to_anchor=(1, 0.8))
     plt.xlabel("$k$", fontsize=24)
     plt.ylabel("$nDCG$", fontsize=24)

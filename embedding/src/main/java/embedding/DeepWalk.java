@@ -58,10 +58,10 @@ public class DeepWalk {
             itr = null;
         }
 
-        String out = String.format("../miscs/%d/taxi-deepwalk-%s-%s.vec", Year, regionLevel, spatialGF);
+        String out = String.format("../miscs/%d/taxi-deepwalk-%s-%s-2D.vec", Year, regionLevel, spatialGF);
         int layerSize = 20;
         if (regionLevel.equals("CA"))
-            layerSize = 8;
+            layerSize = 2;
         else if (regionLevel.equals("tract"))
             layerSize = 20;
 
